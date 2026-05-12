@@ -84,6 +84,7 @@ sub setupNodes()
     ' userName removed
     m.tagTitle = m.top.findNode("tagTitle")
     m.loadingSpinner = m.top.findNode("loadingSpinner")
+    m.loadingStatusText = m.top.findNode("loadingStatusText")
 
     ' Dummy nodes so legacy voiceBox/voiceBoxBackground references don't crash
     m.voiceBox = createObject("roSGNode", "Rectangle")
@@ -403,6 +404,15 @@ sub reloadCategoryResults()
             m.loadItemsTask.itemId = m.top.parentItem.Id
         end if
         m.loadItemsTask.studioIds = string.EMPTY
+        m.loadItemsTask.tagIds = string.EMPTY
+        m.loadItemsTask.tags = string.EMPTY
+        ' Start spinner for Tags loading
+        startLoadingSpinner(false)
+        if isValid(m.loadingSpinner)
+            m.loadingSpinner.visible = true
+            m.loadingSpinner.control = "start"
+        end if
+        showLoadingStatusText(tr("Loading tags..."))
     else
         m.loadItemsTask.itemId = m.top.parentItem.Id
         m.loadItemsTask.genreIds = string.EMPTY
@@ -660,6 +670,11 @@ sub loadInitialItems()
         m.loadItemsTask.studioIds = string.EMPTY
         m.loadItemsTask.tagIds = string.EMPTY
         m.loadItemsTask.tags = string.EMPTY
+        if isValid(m.loadingSpinner)
+            m.loadingSpinner.visible = true
+            m.loadingSpinner.control = "start"
+        end if
+        showLoadingStatusText(tr("Loading tags..."))
     else if isStringEqual(m.view, "TagDetails")
         m.loadItemsTask.view = "TagDetails"
         m.loadItemsTask.itemId = m.top.parentItem.Id
@@ -668,6 +683,7 @@ sub loadInitialItems()
         m.loadItemsTask.genreIds = string.EMPTY
         m.loadItemsTask.studioIds = string.EMPTY
         m.loadItemsTask.tagIds = string.EMPTY
+        showLoadingStatusText(tr("Loading movies..."))
     else if isStringEqual(m.view, "presentation")
         m.loadItemsTask.itemId = m.top.parentItem.Id
         m.loadItemsTask.studioIds = string.EMPTY
@@ -1505,6 +1521,7 @@ sub ItemDataLoaded(msg)
             m.loadingSpinner.control = "stop"
         end if
         stopLoadingSpinner()
+        hideLoadingStatusText()
         return
     end if
 
@@ -2173,6 +2190,9 @@ sub loadTagsItems()
     m.loadedRows = 0
     m.loadedItems = 0
 
+    ' Clear cache to force fresh load with new API parameters
+    m.cachedTagsContentNode = invalid
+
     ' Reuse cached ContentNode for instant restore (no GC issues with re-parenting)
     if isValid(m.cachedTagsContentNode)
         m.data = m.cachedTagsContentNode
@@ -2189,6 +2209,7 @@ sub loadTagsItems()
         scheduleTagsGridRestoreFocus()
 
         stopLoadingSpinner()
+        hideLoadingStatusText()
         return
     end if
 
@@ -2198,6 +2219,7 @@ sub loadTagsItems()
         m.loadingSpinner.visible = true
         m.loadingSpinner.control = "start"
     end if
+    showLoadingStatusText(tr("Loading tags..."))
     m.data = CreateObject("roSGNode", "ContentNode")
     m.itemGrid.content = m.data
     m.loadItemsTask.view = "Tags"
@@ -3097,6 +3119,22 @@ sub createFullOverviewDialog()
     titleText = chainLookupReturn(m.selectedItem, "title", chainLookupReturn(m.selectedItem, "json.Name", tr("Plot")))
 
     m.global.sceneManager.callFunc("standardDialog", titleText, { data: ["<p>" + m.selectedItemOverview.text + "</p>"] })
+end sub
+
+'
+'Loading status text helpers for Tags view
+'
+sub showLoadingStatusText(statusText as string)
+    if isValid(m.loadingStatusText)
+        m.loadingStatusText.text = statusText
+        m.loadingStatusText.visible = true
+    end if
+end sub
+
+sub hideLoadingStatusText()
+    if isValid(m.loadingStatusText)
+        m.loadingStatusText.visible = false
+    end if
 end sub
 
 

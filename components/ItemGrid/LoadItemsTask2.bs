@@ -135,16 +135,18 @@ sub loadItems()
     else if LCase(m.top.view) = "tags"
         url = "Items"
         ' Query items to collect tags - high limit for full coverage
+        ' Only fetch media types that support tags (exclude audiobooks, music, etc.)
         params = {
             UserId: m.global.session.user.id,
             ParentId: m.top.itemId,
             Fields: "Tags,ImageTags,PrimaryImageAspectRatio",
             Recursive: true,
             Limit: 500,
+            includeItemTypes: "Movie,Series,BoxSet",
             SortBy: "SortName",
             SortOrder: "Ascending"
         }
-        print "[TAGS] Querying Tags with ParentId=" + m.top.itemId
+        print "[TAGS_DEBUG] includeItemTypes set to: Movie,Series,BoxSet"
     else if m.top.ItemType = "MusicArtist"
         url = "Artists"
         params.append({
@@ -253,45 +255,13 @@ sub loadItems()
             uniqueTags = {}
             tagImages = {} ' Store sample images for each tag
             tagChildren = {} ' Store sample child nodes for each tag
-            itemCount = 0
             tagItemCount = 0
 
-            print "[TAGS] data type=" + type(data)
-            if type(data) = "roAssociativeArray"
-                if isValid(data.Items)
-                    itemCount = data.Items.Count()
-                end if
-                print "[TAGS] data.Items count=" + Stri(itemCount)
-            else if type(data) = "roArray"
-                itemCount = data.Count()
-                print "[TAGS] data is flat array count=" + Stri(itemCount)
-            end if
-
             if type(data) = "roAssociativeArray" and isValid(data.Items)
-                sampleCount = 0
                 for each item in data.Items
-                    sampleCount++
-                    if sampleCount <= 3
-                        itemName = ""
-                        if isValid(item.Name) then itemName = item.Name
-                        if isValid(item.name) then itemName = item.name
-                        print "[TAGS] sample item " + Stri(sampleCount) + " name=" + itemName
-                    end if
-
                     tagArray = invalid
                     if isValid(item.Tags) and type(item.Tags) = "roArray"
                         tagArray = item.Tags
-                        if sampleCount <= 3
-                            print "[TAGS] sample item " + Stri(sampleCount) + " Tags array count=" + Stri(tagArray.Count())
-                            if tagArray.Count() > 0
-                                print "[TAGS] sample item " + Stri(sampleCount) + " first tag type=" + type(tagArray[0])
-                                if type(tagArray[0]) = "roAssociativeArray"
-                                    print "[TAGS] sample item " + Stri(sampleCount) + " first tag keys=" + tagArray[0].Keys().Join(",")
-                                else if type(tagArray[0]) = "roString"
-                                    print "[TAGS] sample item " + Stri(sampleCount) + " first tag value=" + tagArray[0]
-                                end if
-                            end if
-                        end if
                     else if isValid(item.TagItems) and type(item.TagItems) = "roArray"
                         tagArray = item.TagItems
                     end if
@@ -339,8 +309,6 @@ sub loadItems()
                 end for
             end if
 
-            print "[TAGS] Items with Tags=" + Stri(tagItemCount) + " Unique tags=" + Stri(uniqueTags.Count())
-
             for each tagKey in uniqueTags
                 tagValue = uniqueTags[tagKey]
                 tagImage = ""
@@ -350,17 +318,29 @@ sub loadItems()
                 tagsList.push({ Name: tagValue, Id: tagValue, Type: "Tag", ImageUrl: tagImage, Children: tagChildren[tagKey] })
             end for
 
-            ' Sort tags alphabetically by name (simple bubble sort)
+            ' Sort tags alphabetically by name (case-insensitive)
             if tagsList.Count() > 1
-                for i = 0 to tagsList.Count() - 2
-                    for j = 0 to tagsList.Count() - 2 - i
-                        if LCase(tagsList[j].Name) > LCase(tagsList[j + 1].Name)
-                            temp = tagsList[j]
-                            tagsList[j] = tagsList[j + 1]
-                            tagsList[j + 1] = temp
-                        end if
-                    end for
+                ' Create lowercase map for case-insensitive sorting
+                sortIndex = []
+                for i = 0 to tagsList.Count() - 1
+                    sortIndex.push({ lcName: LCase(tagsList[i].Name), originalIndex: i })
                 end for
+                ' Simple insertion sort on the index
+                for i = 1 to sortIndex.Count() - 1
+                    key = sortIndex[i]
+                    j = i - 1
+                    while j >= 0 and sortIndex[j].lcName > key.lcName
+                        sortIndex[j + 1] = sortIndex[j]
+                        j = j - 1
+                    end while
+                    sortIndex[j + 1] = key
+                end for
+                ' Rebuild list in sorted order
+                sortedTags = []
+                for each idx in sortIndex
+                    sortedTags.push(tagsList[idx.originalIndex])
+                end for
+                tagsList = sortedTags
             end if
 
             data = { Items: tagsList, TotalRecordCount: tagsList.Count() }

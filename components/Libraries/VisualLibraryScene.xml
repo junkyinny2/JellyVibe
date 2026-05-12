@@ -137,7 +137,8 @@
       visible="false"
       translation="[0, 0]" />
 
-    <BusySpinner id="loadingSpinner" translation="[960, 540]" visible="false" />
+    <BusySpinner id="loadingSpinner" translation="[960, 470]" visible="false" />
+    <Text id="loadingStatusText" translation="[0, 540]" font="font:LargeBoldSystemFont" color="#FFFFFF" text="" visible="false" horizAlign="center" width="1920" />
   </children>
   <interface>
     <function name="getItemFocused" />
