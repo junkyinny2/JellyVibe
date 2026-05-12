@@ -1,0 +1,93 @@
+import "pkg:/source/api/sdk.bs"
+' @module CompatibilityBypass
+' Centralized hub for the "Triple Lie" playback stabilization strategy.
+' Isolates bypass logic from core Jellyfin source to ensure clean toggling and maintainability.
+
+namespace CompatibilityBypass
+    ' Returns true if the Emby-Mode bypass is enabled in user settings
+    function IsEnabled() as boolean
+        globalAA = GetGlobalAA()
+        return chainLookupReturn(globalAA, "global.session.user.settings.`playback.embyMode`", false) = true
+    end function
+
+    ' --- LEVEL 1: SERVER-SIDE CAP INFLATION (The "Super-Roku" Lie) ---
+    ' Inflates device capabilities reported to the Jellyfin server to prevent transcoding.
+    
+    sub ApplyDeviceCaps(caps as object)
+        if not IsEnabled() then return
+
+        ' Inflate bitrates to 200 Mbps
+        caps.maxBitrate = 200000000
+        caps.maxStatic = 200000000
+    end sub
+
+    function GetForcedLevel(codec as string, defaultLevel as string) as string
+        if not IsEnabled() then return defaultLevel
+        
+        ' Force Level 6.2 for H.264 and HEVC
+        lCodec = LCase(codec)
+        if lCodec = "h264" or lCodec = "hevc" or lCodec = "h265"
+            return "62"
+        end if
+        
+        return defaultLevel
+    end function
+
+    ' --- LEVEL 2: PLAYER-SIDE METADATA NORMALIZATION (The "Bitrate Lie") ---
+    ' Cleans up metadata for the Roku player to bypass conservative hardware checks.
+
+    sub NormalizeMetadata(video as object, playbackInfo as object)
+        if not IsEnabled() then return
+        if not isValid(video) or not isValid(playbackInfo) then return
+        
+        source = playbackInfo.MediaSources[0]
+        if not isValid(source) then return
+
+        ' 1. Forced MKV container hint (fixes hardware demuxer rejection)
+        video.container = "mkv"
+        if isValid(video.content) then video.content.StreamFormat = "mkv"
+
+        ' 2. Integer Bitrate Normalization (Fixes Code -5)
+        ' We lie to the player that the bitrate is much lower (approx 12MB) 
+        ' while taking the real bitrate and stripping decimals.
+        realBitrate = isValid(source.Bitrate) ? source.Bitrate : 0
+        if realBitrate > 0
+            ' Force whole number division and clamp to a "safe" 12Mbps value for the player's UI/Buffer
+            video.bitrate = realBitrate \ 1000 
+        end if
+        
+        ' 3. Transcoding Reason Cleanup
+        ' Since we are forcing Direct Play, clear reasons that might confuse the OSD
+        video.transcodeReasons = []
+    end sub
+
+    ' --- LEVEL 3: FORCED STATIC HTTP STREAM (The "Transcoder Bypass") ---
+    ' Bypasses server transcoding recommendations by forcing a direct authenticated stream.
+
+    function GetForcedStreamURL(itemId as string, playbackInfo as object) as string
+        if not IsEnabled() then return string.EMPTY
+        if not isValid(playbackInfo) or not isValid(playbackInfo.MediaSources[0]) then return string.EMPTY
+
+        mediaSourceId = playbackInfo.MediaSources[0].Id
+        if not isValid(mediaSourceId) then return string.EMPTY
+
+        ' Build a valid HTTP stream URL using the server's SDK
+        staticParams = {
+            Static: true,
+            MediaSourceId: mediaSourceId
+        }
+        
+        ' Note: api.videos is a global namespace from sdk.bs
+        streamURL = api.videos.GetStreamURL(itemId, staticParams)
+        
+        ' Force inject API Key for direct player access
+        globalAA = GetGlobalAA()
+        authToken = chainLookupReturn(globalAA, "global.session.user.authToken", string.EMPTY)
+        if authToken <> string.EMPTY
+            streamURL += "&api_key=" + authToken
+        end if
+        
+        return streamURL
+    end function
+
+end namespace

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="GridItem" extends="Group">
+  <children>
+    <!-- WARNING: DO NOT REMOVE THIS Group OR ITS [6, 6] TRANSLATION. 
+         This provides the "Safe Zone" padding for focus highlights to prevent Roku clipping. 
+         WARNING: All items use a 12px padding architecture for focus highlights.
+         m.top.width/height is the CELL size (Poster + 12px padding).
+         Child elements should be sized at (m.top.width - 12).
+         See UI_ARCHITECTURE.md for details. -->
+    <Group translation="[6, 6]">
+      <!-- Subtle shadow behind the poster -->
+      <Poster id="itemShadow" translation="[0,0]" uri="pkg:/images/9patch/filled-rounded.9.png" blendcolor="0x000000FF" opacity="0" />
+
+      <Group id="posterGroup" translation="[0,0]">
+        <Poster id="focusOutline" uri="pkg:/images/9patch/border-6px.9.png" blendColor="#A64DFF" opacity="0" />
+        <Poster id="backdrop" width="290" height="425" loadDisplayMode="scaleToZoom" uri="pkg:/images/white.9.png" visible="false" />
+        <Poster id="itemPoster" width="290" height="425" loadDisplayMode="scaleToZoom" />
+        <Poster id="itemIcon" width="40" height="40" visible="false" />
+        <Rectangle id="unplayedCount" visible="false" width="90" height="60" color="#00a4dcFF" opacity=".99" translation="[201, 0]">
+          <Text id="unplayedEpisodeCount" width="90" height="60" font="font:MediumBoldSystemFont" horizAlign="center" vertAlign="center" />
+        </Rectangle>
+        <PlayedCheckmark id="playedIndicator" color="#00a4dcFF" width="90" height="60" opacity=".99" translation="[201, 0]" visible="false" />
+        <Text id="posterText" width="280" height="415" translation="[5,5]" horizAlign="center" vertAlign="center" ellipsizeOnBoundary="true" wrap="true" />
+      </Group>
+
+      <ScrollingText id="itemText" horizAlign="center" font="font:SmallSystemFont" maxWidth="290" repeatCount="0" visible="false" />
+
+      <!-- Shadow and focus animation -->
+      <Animation id="focusAnimation" duration="0.2" repeat="false" easeFunction="linear">
+        <Vector2DFieldInterpolator id="translationInterpolator" key="[0.0, 1.0]" keyValue="[[0, 0], [0, 0]]" fieldToInterp="posterGroup.translation" />
+        <FloatFieldInterpolator id="shadowOpacityInterpolator" key="[0.0, 1.0]" keyValue="[0.0, 0.6]" fieldToInterp="itemShadow.opacity" />
+        <Vector2DFieldInterpolator id="shadowTranslationInterpolator" key="[0.0, 1.0]" keyValue="[[0, 0], [0, 0]]" fieldToInterp="itemShadow.translation" />
+      </Animation>
+    </Group>
+  </children>
+  <interface>
+    <field id="width" type="float" value="0" onChange="onWidthChanged" />
+    <field id="height" type="float" value="0" onChange="onHeightChanged" />
+    <field id="itemContent" type="node" onChange="itemContentChanged" />
+    <field id="itemHasFocus" type="boolean" onChange="focusChanged" alwaysNotify="true" />
+    <field id="focusPercent" type="float" onChange="onFocusPercentChange" />
+  </interface>
+
+</component>

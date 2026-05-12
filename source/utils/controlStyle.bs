@@ -1,0 +1,77 @@
+import "pkg:/source/enums/ColorPalette.bs"
+import "pkg:/source/utils/misc.bs"
+
+function getControlStyle() as string
+    controlStyle = chainLookupReturn(m.global, "session.user.settings.`ui.controls.style`", "jellyrock")
+
+    if controlStyle = invalid then return "classic"
+
+    controlStyleType = type(controlStyle)
+    if controlStyleType <> "roString" and controlStyleType <> "String"
+        return "classic"
+    end if
+
+    return LCase(controlStyle)
+end function
+
+function isJellyRockControlStyle() as boolean
+    return getControlStyle() = "jellyrock"
+end function
+
+function getControlAccentColor(defaultColor = invalid as dynamic) as dynamic
+    fallbackColor = defaultColor
+    if fallbackColor = invalid then fallbackColor = ColorPalette.HIGHLIGHT
+
+    ' For JellyRock controls, always use the global highlight color so
+    ' focus states are consistently brand colors regardless of per-user cursor color.
+    if isJellyRockControlStyle()
+        return ColorPalette.HIGHLIGHT
+    end if
+
+    return chainLookupReturn(m.global, "session.user.settings.colorCursor", fallbackColor)
+end function
+
+function getControlSurfaceBackground(defaultColor = invalid as dynamic) as dynamic
+    if not isJellyRockControlStyle()
+        return defaultColor
+    end if
+
+    if defaultColor <> invalid
+        ' Roku 'color' type fields return integers when read back, even if set with a hex string.
+        ' Guard LCase() to only run on actual strings to avoid a type-mismatch crash.
+        colorType = type(defaultColor)
+        if colorType = "roString" or colorType = "String"
+            normalizedColor = LCase(defaultColor)
+            if normalizedColor <> "" and normalizedColor <> "#ffffff" and normalizedColor <> "#ffffffff" and normalizedColor <> "0xffffff" and normalizedColor <> "0xffffffff"
+                return defaultColor
+            end if
+        end if
+        ' Integer color values (read back from 'color' fields) fall through to the JellyRock surface.
+    end if
+
+    ' JellyRock uses a solid secondary surface under the accent border so focused buttons remain legible.
+    return "#020B2AE6"
+end function
+
+function getControlFocusBackground(defaultColor as dynamic) as dynamic
+    if isJellyRockControlStyle()
+        ' Respect an explicitly transparent background (string or integer form).
+        colorType = type(defaultColor)
+        if colorType = "roString" or colorType = "String"
+            c = LCase(defaultColor)
+            if c = "#00000000" or c = "0x00000000" then return defaultColor
+        else if colorType = "roInt" or colorType = "Integer" or colorType = "roInteger" or colorType = "Long" or colorType = "roLong"
+            if defaultColor = 0 then return defaultColor
+        end if
+        return getControlAccentColor(defaultColor)
+    end if
+    return defaultColor
+end function
+
+function getControlFocusTextColor(defaultColor as dynamic) as dynamic
+    if isJellyRockControlStyle()
+        return ColorPalette.WHITE
+    end if
+
+    return defaultColor
+end function

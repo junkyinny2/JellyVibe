@@ -1,0 +1,54 @@
+[[90m07:30:53:943 AM[39m] Using config file: "D:\VibeCode\jellyfin-roku-3.1.7\bsconfig.json"
+[[90m07:30:53:944 AM[39m] Loading 1 plugins for cwd "D:\VibeCode\jellyfin-roku-3.1.7" [ '@rokucommunity/bslint' ]
+[[90m07:30:53:947 AM[39m] Parsing files
+[[90m07:30:54:284 AM[39m] Parsing files finished. ([34m336.285ms[39m)
+[[90m07:30:54:284 AM[39m] Validating project
+[[90m07:30:54:780 AM[39m] Validating project finished. ([34m496.258ms[39m)
+
+components\ItemGrid\ItemGridOptions.bs:284:36 - warning BSLINT1006: Parameter 'press' is set but value is never used
+
+ 284  function onKeyEvent(key as string, press as boolean) as boolean
+                                         ~~~~~                       
+
+
+components\data\MovieData.bs:46:38 - warning BSLINT1006: Parameter 'unplayedItemCount' is set but value is never used
+
+ 46  sub setWatched(isWatched as boolean, unplayedItemCount = 0 as integer)
+                                          ~~~~~~~~~~~~~~~~~                
+
+
+components\data\TVEpisode.bs:29:38 - warning BSLINT1006: Parameter 'unplayedItemCount' is set but value is never used
+
+ 29  sub setWatched(isWatched as boolean, unplayedItemCount = 0 as integer)
+                                          ~~~~~~~~~~~~~~~~~                
+
+
+components\movies\MovieOptions.bs:168:36 - warning BSLINT1006: Parameter 'press' is set but value is never used
+
+ 168  function onKeyEvent(key as string, press as boolean) as boolean
+                                         ~~~~~                       
+
+
+components\search\SearchResults.bs:62:36 - warning BSLINT1006: Parameter 'press' is set but value is never used
+
+ 62  function onKeyEvent(key as string, press as boolean) as boolean
+                                        ~~~~~                       
+
+
+components\tvshows\TVListOptions.bs:103:36 - warning BSLINT1006: Parameter 'press' is set but value is never used
+
+ 103  function onKeyEvent(key as string, press as boolean) as boolean
+                                         ~~~~~                       
+
+
+components\video\VideoPlayerView.bs:995:13 - warning BSLINT1006: Parameter 'msg' is set but value is never used
+
+ 995  sub onState(msg)
+                  ~~~ 
+
+
+components\video\VideoPlayerView.bs:1248:17 - warning BSLINT1006: Parameter 'msg' is set but value is never used
+
+ 1248  sub bufferCheck(msg)
+                       ~~~ 
+

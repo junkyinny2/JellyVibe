@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="HomeRows" extends="RowList">
+  <interface>
+    <field id="selectedItem" type="node" alwaysNotify="true" />
+    <field id="quickPlayNode" type="node" />
+    <field id="viewMode" type="string" value="home" />
+    <function name="updateHomeRows" />
+    <function name="loadLibraries" />
+  </interface>
+
+</component>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FilterCheckItem  –  custom item renderer
+  Used when you want richer checkbox visuals than the built-in CheckList.
+  Drop-in replacement: set itemComponentName="FilterCheckItem" on a MarkupList.
+-->
+<component name="FilterCheckItem" extends="Group">
+
+  <children>
+    <!-- Row background (highlight on focus) -->
+    <Rectangle
+      id="rowBg"
+      width="380"
+      height="52"
+      color="0x00000000"
+      opacity="0" />
+
+    <!-- Checkbox icon -->
+    <Poster
+      id="checkIcon"
+      width="24"
+      height="24"
+      translation="[6, 14]"
+      uri="pkg:/images/icons/checkbox_empty.png" />
+
+    <!-- Thumbnail image (for tags with images) -->
+    <Poster
+      id="thumbPoster"
+      width="40"
+      height="40"
+      translation="[36, 6]"
+      loadSync="false"
+      loadWidth="80"
+      loadHeight="80"
+      uri="" />
+
+    <!-- Item label -->
+    <Label
+      id="itemLabel"
+      font="font:SmallestSystemFont"
+      color="#CCCCCCFF"
+      height="52"
+      width="290"
+      vertAlign="center"
+      translation="[82, 0]" />
+  </children>
+
+  <interface>
+    <field id="itemContent" type="node"
+      onChange="onContentChanged" />
+    <field id="focusPercent" type="float"
+      onChange="onFocusChanged" />
+  </interface>
+
+</component>

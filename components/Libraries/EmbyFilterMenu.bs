@@ -1,0 +1,58 @@
+import "pkg:/source/utils/misc.bs"
+
+sub init()
+    m.background = m.top.findNode("background")
+    m.filterContainer = m.top.findNode("filterContainer")
+    m.unfoldAnimation = m.top.findNode("unfoldAnimation")
+
+    m.resList = m.top.findNode("resList")
+    m.yearList = m.top.findNode("yearList")
+    m.tagList = m.top.findNode("tagList")
+
+    ' Placeholder data for Resolution
+    resContent = CreateObject("roSGNode", "ContentNode")
+    for each res in ["All", "4K", "1080p", "720p", "SD"]
+        item = resContent.CreateChild("ContentNode")
+        item.title = res
+    end for
+    if isValid(m.resList) then m.resList.content = resContent
+
+    ' Placeholder data for Year
+    yearContent = CreateObject("roSGNode", "ContentNode")
+    for each year in ["All", "2024", "2023", "2022", "2021", "2020s", "2010s"]
+        item = yearContent.CreateChild("ContentNode")
+        item.title = year
+    end for
+    if isValid(m.yearList) then m.yearList.content = yearContent
+
+    ' Placeholder data for Tag
+    tagContent = CreateObject("roSGNode", "ContentNode")
+    for each tag in ["All", "Action", "Comedy", "Drama", "Sci-Fi"]
+        item = tagContent.CreateChild("ContentNode")
+        item.title = tag
+    end for
+    if isValid(m.tagList) then m.tagList.content = tagContent
+end sub
+
+sub onActiveChange()
+    if not isValid(m.unfoldAnimation) then return
+    if m.top.active
+        m.unfoldAnimation.control = "start"
+        if isValid(m.resList) then m.resList.setFocus(true)
+    else
+        m.unfoldAnimation.control = "reverse"
+    end if
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+
+    if key = "back" or key = "up"
+        if m.top.active
+            m.top.active = false
+            return true
+        end if
+    end if
+
+    return false
+end function

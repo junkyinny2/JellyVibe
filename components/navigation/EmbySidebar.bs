@@ -1,0 +1,58 @@
+import "pkg:/source/utils/misc.bs"
+
+sub init()
+    m.background = m.top.findNode("background")
+    m.menuGroup = m.top.findNode("menuGroup")
+    m.expandAnimation = m.top.findNode("expandAnimation")
+    m.focusHighlight = m.top.findNode("focusHighlight")
+
+    m.navItems = [
+        m.top.findNode("navHome"),
+        m.top.findNode("navMovies"),
+        m.top.findNode("navTV"),
+        m.top.findNode("navMusic"),
+        m.top.findNode("navSettings")
+    ]
+
+    for each item in m.navItems
+        if isValid(item)
+            item.observeField("hasFocus", "onItemFocusChange")
+        end if
+    end for
+end sub
+
+sub onExpandedChange()
+    if isValid(m.expandAnimation)
+        if m.top.expanded
+            m.expandAnimation.control = "start"
+        else
+            m.expandAnimation.control = "reverse"
+        end if
+    end if
+end sub
+
+sub onItemFocusChange(msg)
+    item = msg.getRoSyncObject()
+    if not isValid(item) then return
+    if item.hasFocus()
+        yPos = m.menuGroup.translation[1] + item.translation[1]
+        m.focusHighlight.opacity = 0.5
+        m.focusHighlight.translation = [0, yPos]
+        m.top.expanded = true
+    end if
+end sub
+
+sub clearFocusHighlight()
+    m.focusHighlight.opacity = 0
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+
+    if key = "right" or key = "back"
+        m.top.expanded = false
+        return false
+    end if
+
+    return false
+end function

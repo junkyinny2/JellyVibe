@@ -1,0 +1,44 @@
+# Manual Roku Deployment Guide
+
+To manually publish (sideload) the Jellyfin Roku app to your device, follow these steps:
+
+## 1. Enable Developer Mode on your Roku
+- On your Roku remote, press the following buttons in order:
+  `Home (x3), Up (x2), Right, Left, Right, Left, Right`
+- Select "Enable installer and get started".
+- Note your Roku's IP address and set a developer password.
+
+## 2. Prepare the Application Package (.zip)
+The Roku requires a `.zip` file containing the `manifest`, `source/`, `components/`, and other assets.
+Since this project uses BrighterScript (.bs files), they must be transpiled to BrightScript (.brs files) before zipping.
+
+- **Option A (Automated Build):**
+  Run `npm run build`. This creates a zip at `out/jellyfin-roku-3.1.7.zip`.
+
+- **Option B (Manual Transpile):**
+  Run `npx bsc`. This will transpile the files into the `build/staging` folder. You can then zip the contents of `build/staging` manually.
+
+## 3. Upload to Roku
+
+### Method 1: Web Interface (Easiest)
+1. Open a web browser on your computer.
+2. Navigate to your Roku's IP address (e.g., `http://192.168.1.196`).
+3. Log in with the username `rokudev` and the password you set.
+4. Click "Upload" and select your `.zip` file.
+5. Click "Install" or "Replace".
+
+### Method 2: Command Line (Fastest)
+Use `curl` to send the file directly from your terminal:
+```bash
+curl --user rokudev:YOUR_PASSWORD --digest -F "archive=@path/to/your/app.zip" -F "mysubmit=Replace" http://YOUR_ROKU_IP/plugin_install
+```
+
+## 4. Debugging
+To see logs while the app is running:
+- Open a terminal and run: `telnet YOUR_ROKU_IP 8085`
+- (Note: You may need to enable the Telnet client in Windows Features).
+
+---
+Credentials used in this project:
+- IP: 192.168.1.196
+- Pass: whit

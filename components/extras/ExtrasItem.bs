@@ -1,0 +1,297 @@
+import "pkg:/source/enums/ColorPalette.bs"
+import "pkg:/source/enums/ItemType.bs"
+import "pkg:/source/utils/misc.bs"
+
+sub init()
+    m.extrasType = {
+        BEHINDTHESCENES: "Behind the Scenes",
+        CLIP: "Clip",
+        DELETEDSCENE: "Deleted Scene",
+        FEATURETTE: "Featurette",
+        INTERVIEW: "Interview",
+        SAMPLE: "Sample",
+        SCENE: "Scene",
+        SHORT: "Short",
+        THEMESONG: "ThemeSong",
+        THEMEVIDEO: "ThemeVideo",
+        TRAILER: "Trailer",
+        UNKNOWN: "Extra"
+    }
+
+    initPosterImg()
+    initName()
+    initRole()
+
+    m.tileBackground = m.top.findNode("tileBackground")
+    m.tileBorder = m.top.findNode("tileBorder")
+    m.tagUnderline = m.top.findNode("tagUnderline")
+
+    if isValid(m.tileBackground)
+        m.tileBackground.blendColor = ColorPalette.TRANSPARENT
+    end if
+    if isValid(m.tileBorder)
+        m.tileBorder.blendColor = ColorPalette.TRANSPARENT
+    end if
+
+    m.name.height = 34
+    m.name.font.size = 25
+    m.name.horizAlign = "left"
+    m.name.vertAlign = "bottom"
+
+    m.role.font.size = 22
+    m.isGridLike = false
+    m.isTagStyle = false
+    m.isTagLineStyle = false
+end sub
+
+sub initPosterImg()
+    m.posterImg = m.top.findNode("posterImg")
+end sub
+
+sub initName()
+    m.name = m.top.findNode("pLabel")
+end sub
+
+sub initRole()
+    m.role = m.top.findNode("subTitle")
+end sub
+
+sub showContent()
+    ' validate nodes to prevent crash
+    if not isValid(m.posterImg) then initPosterImg()
+    if not isValid(m.name) then initName()
+    if not isValid(m.role) then initRole()
+
+    if isValid(m.top.itemContent)
+        cont = m.top.itemContent
+        m.isGridLike = chainLookupReturn(cont, "gridLike", false)
+        m.isTagStyle = isStringEqual(cont.LookupCI("type"), "tag")
+        m.isTagLineStyle = isStringEqual(cont.LookupCI("type"), "tagline")
+
+        ' Ensure tile background/border exist and size them based on content
+        if not isValid(m.tileBackground) then m.tileBackground = m.top.findNode("tileBackground")
+        if not isValid(m.tileBorder) then m.tileBorder = m.top.findNode("tileBorder")
+
+        tileWidth = chainLookupReturn(cont, "imageWidth", 234)
+        if not isValid(tileWidth) or tileWidth <= 0 then tileWidth = 234
+
+        if m.isTagLineStyle or m.isTagStyle
+            tileHeight = 90
+        else
+            tileHeight = 396
+        end if
+
+        if isValid(m.tileBackground)
+            m.tileBackground.visible = true
+            m.tileBackground.width = tileWidth
+            m.tileBackground.height = tileHeight
+            m.tileBackground.translation = [0, 0]
+            m.tileBackground.blendColor = (m.isTagStyle or m.isTagLineStyle) ? ColorPalette.SMOKE : "#303030"
+        end if
+
+        if isValid(m.tileBorder)
+            m.tileBorder.visible = true
+            m.tileBorder.width = tileWidth
+            m.tileBorder.height = tileHeight
+            m.tileBorder.translation = [0, 0]
+            m.tileBorder.blendColor = ColorPalette.HIGHLIGHT
+        end if
+
+        if m.isTagLineStyle
+            m.posterImg.visible = false
+            m.posterImg.width = 0
+            m.posterImg.height = 0
+            m.posterImg.translation = [0, 0]
+            m.role.visible = false
+            m.role.height = 0
+
+            m.name.text = cont.labelText
+            m.name.translation = [0, 0]
+            m.name.width = cont.imageWidth
+            m.name.height = tileHeight
+            m.name.maxWidth = cont.imageWidth
+            m.name.horizAlign = "center"
+            m.name.vertAlign = "center"
+            m.name.font.size = 30
+            m.name.color = "#E5E5E5FF"
+
+            if isValid(m.tagUnderline)
+                m.tagUnderline.visible = false
+            end if
+
+            return
+        end if
+
+        m.name.text = cont.labelText
+        m.name.maxWidth = cont.imageWidth
+        m.role.maxWidth = cont.imageWidth
+        m.posterImg.uri = cont.posterUrl
+        m.posterImg.width = cont.imageWidth
+
+        if m.isTagStyle
+            m.posterImg.visible = false
+            m.posterImg.width = 0
+            m.posterImg.height = 0
+            m.posterImg.translation = [0, 0]
+            m.role.visible = false
+            m.role.height = 0
+            m.name.translation = [0, 0]
+            m.name.width = cont.imageWidth
+            m.name.height = tileHeight
+            m.name.maxWidth = cont.imageWidth
+            m.name.horizAlign = "center"
+            m.name.vertAlign = "center"
+            m.name.font.size = 30
+            m.name.color = "#E5E5E5FF"
+
+            if isValid(m.tagUnderline)
+                m.tagUnderline.visible = false
+            end if
+
+            return
+        end if
+
+        m.posterImg.visible = true
+        m.role.height = 32
+        m.name.color = "#FFFFFFFF"
+        if isValid(m.tagUnderline) then m.tagUnderline.visible = false
+
+        if m.isGridLike
+            m.posterImg.translation = [0, 23]
+            m.posterImg.height = 305
+            m.posterImg.loadDisplayMode = "scaleToZoom"
+
+            m.name.translation = [0, 332]
+            m.name.height = 34
+            m.name.maxWidth = cont.imageWidth
+            m.name.horizAlign = "center"
+            m.name.vertAlign = "center"
+            m.name.font.size = 25
+
+            m.role.translation = [0, 366]
+            m.role.height = 28
+            m.role.horizAlign = "center"
+            m.role.vertAlign = "center"
+            m.role.font.size = 20
+            m.role.visible = isValidAndNotEmpty(cont.subTitle)
+        else
+            m.posterImg.translation = [0, 0]
+            m.posterImg.height = 300
+            m.posterImg.loadDisplayMode = "scaleToZoom"
+
+            m.name.translation = [0, 308]
+            m.name.height = 34
+            m.name.maxWidth = cont.imageWidth
+            m.name.horizAlign = "left"
+            m.name.vertAlign = "center"
+            m.name.font.size = 25
+
+            m.role.visible = true
+            m.role.translation = [0, 344]
+            m.role.height = 30
+            m.role.horizAlign = "left"
+            m.role.vertAlign = "center"
+            m.role.font.size = 22
+        end if
+
+        if isStringEqual(cont.LookupCI("type"), ItemType.MUSICVIDEO)
+            m.posterImg.width = 400
+            m.name.maxWidth = 400
+            m.role.maxWidth = 400
+            m.posterImg.height = 260
+            m.posterImg.translation = [0, 23]
+        end if
+
+        if isChainValid(cont, "json.ExtraType")
+            if cont.json.ExtraType <> ""
+                cont.subTitle = m.extrasType[UCase(cont.json.ExtraType)]
+            end if
+        end if
+
+        if isChainValid(cont, "json.officialrating")
+            if cont.json.officialrating <> ""
+                cont.subTitle += ` - ${cont.json.officialrating}`
+            end if
+        end if
+
+        m.role.Text = cont.subTitle.trim()
+        if not isValidAndNotEmpty(m.role.Text)
+            m.role.visible = false
+        end if
+        m.role.color = "#777777FF"
+    else
+        m.isTagStyle = false
+        m.isTagLineStyle = false
+        if isValid(m.tagUnderline) then m.tagUnderline.visible = false
+        if isValid(m.tileBackground) then m.tileBackground.visible = false
+        if isValid(m.tileBorder)
+            m.tileBorder.visible = false
+            m.tileBorder.blendColor = ColorPalette.TRANSPARENT
+        end if
+        m.role.text = tr("Unknown")
+        m.posterImg.uri = "pkg:/images/baseline_person_white_48dp.png"
+    end if
+end sub
+
+sub focusChanged()
+    hasFocus = (m.top.itemHasFocus = true)
+
+    if m.isTagLineStyle
+        if hasFocus
+            m.name.repeatCount = -1
+            m.name.color = "#FFFFFFFF"
+        else
+            m.name.repeatCount = 0
+            m.name.color = "#E5E5E5FF"
+        end if
+
+        if m.global.device.isAudioGuideEnabled = true
+            txt2Speech = CreateObject("roTextToSpeech")
+            txt2Speech.Flush()
+            txt2Speech.Say(m.name.text)
+        end if
+
+        return
+    end if
+
+    if m.isTagStyle
+        if hasFocus
+            m.name.repeatCount = -1
+            m.name.color = "#FFFFFFFF"
+        else
+            m.name.repeatCount = 0
+            m.name.color = "#E5E5E5FF"
+        end if
+
+        if m.global.device.isAudioGuideEnabled = true
+            txt2Speech = CreateObject("roTextToSpeech")
+            txt2Speech.Flush()
+            txt2Speech.Say(m.name.text)
+        end if
+
+        return
+    end if
+
+    if hasFocus
+        m.name.repeatCount = -1
+        if m.isGridLike or m.isTagStyle
+            m.role.repeatCount = 0
+        else
+            m.role.repeatCount = -1
+        end if
+    else
+        m.name.repeatCount = 0
+        m.role.repeatCount = 0
+    end if
+
+    if isValid(m.tileBorder)
+        m.tileBorder.opacity = hasFocus ? 1 : 0
+    end if
+
+    if m.global.device.isAudioGuideEnabled = true
+        txt2Speech = CreateObject("roTextToSpeech")
+        txt2Speech.Flush()
+        txt2Speech.Say(m.name.text)
+        txt2Speech.Say(m.role.text)
+    end if
+end sub

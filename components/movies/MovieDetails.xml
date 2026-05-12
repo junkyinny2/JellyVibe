@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="MovieDetails" extends="JFScreen">
+  <children>
+    <Group id="plotFocusAnchor" focusable="true" visible="false" translation="[-2000, -2000]" />
+
+    <Rectangle id="extrasHeaderStrip" translation="[0, 0]" width="1920" height="106" color="#020B2AC0" visible="false" />
+
+    <!-- Clock in Upper Right -->
+    <Clock translation="[1720, 40]" />
+
+    <LayoutGroup id="container" layoutDirection="vert" itemSpacings="[12]" translation="[100, 360]">
+      <!-- Title -->
+      <Text id="title" font="font:LargeBoldSystemFont" width="1100" wrap="true" />
+
+      <!-- Meta Row 1: Rating, Tomato, Year, Runtime, MPAA -->
+      <LayoutGroup id="infoGroup" layoutDirection="horiz" horizAlignment="left" itemSpacings="[20]">
+        <LayoutGroup id="communityRatingGroup" layoutDirection="horiz" itemSpacings="[5]">
+           <Poster id="star" uri="pkg:/images/sharp_star_white_18dp.png" height="24" width="24" blendColor="#FFD700" />
+           <Text id="communityRating" font="font:SmallestSystemFont" />
+        </LayoutGroup>
+        <LayoutGroup id="criticRatingGroup" layoutDirection="horiz" itemSpacings="[5]">
+           <Poster id="criticRatingIcon" height="24" width="24" />
+           <Text id="criticRatingLabel" font="font:SmallestSystemFont" />
+        </LayoutGroup>
+        <Text id="releaseYear" font="font:SmallestSystemFont" />
+        <Text id="runtime" font="font:SmallestSystemFont" />
+        <Text id="officialRating" font="font:SmallestBoldSystemFont" />
+      </LayoutGroup>
+
+      <!-- Meta Row 2: Genre • Director • Ends at -->
+      <Text id="metaRow2Text" font="font:SmallestSystemFont" wrap="false" width="1100" />
+
+      <!-- Tags (from item metadata / NFO) -->
+      <Text id="tagsText" font="font:SmallestSystemFont" width="1100" wrap="true" visible="false" color="#d0d0d0ff" />
+
+      <!-- Overview (selectable, OK opens full plot dialog) -->
+      <Group id="overviewGroup" width="1100" height="178" focusable="false">
+        <Rectangle id="overviewBackground" width="1100" height="178" color="#00000000" />
+        <Rectangle id="overviewBorder" width="1100" height="178" color="0x00000000" />
+        <Text id="overview" wrap="true" maxLines="4" width="1088" lineSpacing="5" translation="[6, 16]" color="#f2f2f2ff" />
+      </Group>
+
+    </LayoutGroup>
+
+    <!-- Stream selector row pinned above action controls -->
+    <LayoutGroup id="streamSelectorRow" layoutDirection="horiz" horizAlignment="left" itemSpacings="[15]" translation="[100, 758]">
+
+      <!-- Video column -->
+      <LayoutGroup layoutDirection="vert" itemSpacings="[4]">
+        <Text id="videoLabel" text="Video" font="font:SmallestBoldSystemFont" color="#bbbbbb" />
+        <TextButton id="videoButton" iconSide="right" fontSize="22" padding="15"
+          icon="pkg:/images/icons/dropdown-dark.png" focusIcon="pkg:/images/icons/dropdown-light.png"
+          text="" height="48" width="320"
+          background="#55020B2A" focusBackground="#FFFFFF"
+          textColor="#FFFFFF" focusTextColor="#000000" focusable="true" />
+      </LayoutGroup>
+
+      <!-- Audio column -->
+      <LayoutGroup layoutDirection="vert" itemSpacings="[4]">
+        <Text text="Audio" font="font:SmallestBoldSystemFont" color="#bbbbbb" />
+        <TextButton id="audioButton" iconSide="right" fontSize="22" padding="15"
+          icon="pkg:/images/icons/dropdown-dark.png" focusIcon="pkg:/images/icons/dropdown-light.png"
+          text="" height="48" width="300"
+          background="#55020B2A" focusBackground="#FFFFFF"
+          textColor="#FFFFFF" focusTextColor="#000000" focusable="true" />
+      </LayoutGroup>
+
+      <!-- Subtitles column -->
+      <LayoutGroup layoutDirection="vert" itemSpacings="[4]">
+        <Text text="Subtitles" font="font:SmallestBoldSystemFont" color="#bbbbbb" />
+        <TextButton id="subtitleButton" iconSide="right" fontSize="22" padding="15"
+          icon="pkg:/images/icons/dropdown-dark.png" focusIcon="pkg:/images/icons/dropdown-light.png"
+          text="" height="48" width="220"
+          background="#55020B2A" focusBackground="#FFFFFF"
+          textColor="#FFFFFF" focusTextColor="#000000" focusable="true" />
+      </LayoutGroup>
+
+    </LayoutGroup>
+
+    <!-- Action Buttons row pinned above Cast & Crew -->
+    <Group id="actionButtonsRow" translation="[100, 852]">
+      <Poster id="leftButtonArrow" uri="pkg:/images/icons/left_white.png" width="30" height="30" translation="[-40, 22]" visible="false" opacity="0.5" />
+      <Group id="buttonsClip" translation="[0, 0]" clippingRect="[0, -10, 940, 180]">
+        <ButtonGroupHoriz id="buttons" itemSpacings="[8]" translation="[0, 0]">
+          <IconButton id="resume-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/resume.png" text="Resume" height="75" width="140" visible="false" />
+          <IconButton id="play-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/play.png" text="Play" height="75" width="140" />
+          <IconButton id="delete-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/trash.png" text="Delete" height="75" width="140" />
+          <IconButton id="watched-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/check.png" text="Played" height="75" width="140" />
+          <IconButton id="favorite-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/heart.png" text="Favorite" height="75" width="140" />
+          <IconButton id="refresh-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/loop.png" focusIcon="pkg:/images/icons/loopindicator-on.png" text="Refresh" height="75" width="140" />
+          <IconButton id="info-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/info.png" text="Info" height="75" width="140" />
+          <IconButton id="options-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/settings.png" text="Options" height="75" width="140" />
+        </ButtonGroupHoriz>
+      </Group>
+      <Poster id="rightButtonArrow" uri="pkg:/images/icons/right_white.png" width="30" height="30" translation="[950, 22]" visible="false" opacity="0.5" />
+    </Group>
+
+    <MovieOptions id="movieOptions" visible="false" />
+    <Label id="dateAdded" font="font:SmallestSystemFont" color="#bbbbbb" width="560" horizAlign="right" translation="[1320, 980]" />
+
+    <Animation id="detailsSlideAnime" duration=".4" repeat="false">
+      <Vector2DFieldInterpolator
+        id="detailsContainerSlider"
+        key="[0.0, 1.0]"
+        keyValue="[[100, 360], [100, 360]]"
+        fieldToInterp="container.translation" />
+      <Vector2DFieldInterpolator
+        id="selectorRowSlider"
+        key="[0.0, 1.0]"
+        keyValue="[[100, 758], [100, 758]]"
+        fieldToInterp="streamSelectorRow.translation" />
+      <Vector2DFieldInterpolator
+        id="buttonRowSlider"
+        key="[0.0, 1.0]"
+        keyValue="[[100, 852], [100, 852]]"
+        fieldToInterp="actionButtonsRow.translation" />
+      <Vector2DFieldInterpolator
+        id="dateAddedSlider"
+        key="[0.0, 1.0]"
+        keyValue="[[1320, 980], [1320, 980]]"
+        fieldToInterp="dateAdded.translation" />
+    </Animation>
+
+    <!-- "Cast and Crew" row -->
+    <ExtrasSlider id="movieExtras" visible="false" />
+  </children>
+  <interface>
+    <field id="buttonSelected" type="string" alwaysNotify="true" />
+    <field id="itemContent" type="node" />
+    <field id="logoImageURI" type="string" onChange="onLogoImageURIChange" />
+    <field id="trailerAvailable" type="bool" onChange="trailerAvailableChanged" value="true" />
+    <field id="isInMyList" type="bool" onChange="onIsInMyListChanged" />
+    <field id="additionalParts" type="assocarray" onChange="additionalPartsChanged" />
+    <field id="selectedPart" type="assocarray" onChange="onSelectedPartChanged" />
+    <field id="selectedAudioStreamIndex" type="integer" />
+    <field id="selectedVideoStreamId" type="string" />
+    <field id="quickPlayNode" type="node" alwaysNotify="true" />
+    <field id="refreshMovieDetailsData" type="bool" alwaysNotify="true" />
+    <field id="selectedButtonIndex" type="integer" value="-1" />
+    <field id="resumePlayback" type="bool" value="false" />
+    <function name="loadMovieById" />
+  </interface>
+
+</component>

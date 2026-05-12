@@ -1,0 +1,26 @@
+*.svg
+.env
+# Local Roku sideload credentials (see rokudeploy.example.json)
+rokudeploy.json
+# BrightScript 
+dist/apps
+out/
+build/
+roku_modules
+source/globals.brs
+jellyfin-roku.zip
+# NPM 
+node_modules/
+# Eclipse
+.buildpath
+.project
+.settings
+history/
+site/
+*.log
+deploy_log.txt
+build_errors.txt
+all_authors.txt
+scratch/
+test.bs
+old_*.xml

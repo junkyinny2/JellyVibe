@@ -1,0 +1,86 @@
+import "pkg:/source/enums/ColorPalette.bs"
+import "pkg:/source/utils/misc.bs"
+sub init()
+    m.label = m.top.findNode("label")
+    m.underline = m.top.findNode("underline")
+    m.icon = m.top.findNode("icon")
+    m.focusBackground = m.top.findNode("focusBackground")
+    m.backArrow = m.top.findNode("backArrow")
+    m.isSelected = false
+end sub
+
+sub onFocusChanged()
+    applyTabState()
+end sub
+
+sub onContentChange()
+    if isValid(m.top.itemContent)
+        title = m.top.itemContent.title
+        m.label.text = title
+        m.isSelected = chainLookupReturn(m.top.itemContent, "selected", false) = true
+
+        id = m.top.itemContent.id
+        if id = "Search"
+            m.icon.uri = "pkg:/images/icons/search-light.png"
+            m.icon.visible = true
+            m.label.visible = false
+            m.underline.visible = false
+            m.backArrow.visible = false
+        else if id = "Settings"
+            m.icon.uri = "pkg:/images/icons/settings.png"
+            m.icon.visible = true
+            m.label.visible = false
+            m.underline.visible = false
+            m.backArrow.visible = false
+        else if id = "Back"
+            m.backArrow.visible = true
+            m.label.visible = false
+            m.icon.visible = false
+            m.underline.visible = false
+        else
+            m.icon.visible = false
+            m.label.visible = true
+            m.backArrow.visible = false
+            ' Disable underline for "Movies" tab as per user request
+            m.underline.visible = (id <> "Movies")
+        end if
+    end if
+    applyTabState()
+end sub
+
+' focusPercent 0.0 to 1.0
+sub onFocusPercentChange()
+    applyTabState()
+end sub
+
+sub applyTabState()
+    focused = m.top.focusPercent > 0.5
+
+    ' No highlight for selected state - only show highlight when focused
+    if focused
+        m.label.color = ColorPalette.WHITE
+        if isValid(m.focusBackground)
+            m.focusBackground.blendColor = ColorPalette.HIGHLIGHT
+            m.focusBackground.opacity = 1
+        end if
+    else
+        m.label.color = m.isSelected ? ColorPalette.HIGHLIGHT : ColorPalette.WHITE
+        if isValid(m.focusBackground)
+            m.focusBackground.opacity = 0
+        end if
+    end if
+
+    ' Underline visible for selected items but without color highlight
+    if isValid(m.underline)
+        m.underline.opacity = (m.isSelected and not focused) ? 0.5 : 0
+        m.underline.color = "#FFFFFF"
+    end if
+
+    if m.icon.visible
+        m.icon.blendColor = (focused) ? "#000000" : "#FFFFFF"
+    end if
+
+    if m.backArrow.visible
+        m.backArrow.blendColor = (focused) ? "#000000" : "#FFFFFF"
+    end if
+end sub

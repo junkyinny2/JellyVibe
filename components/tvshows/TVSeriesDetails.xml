@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="TVSeriesDetails" extends="JFScreen">
+  <children>
+    <Clock translation="[1720, 40]" />
+
+    <!-- Container for all details content that moves together when Extras slider opens -->
+    <Group id="detailsGroup">
+      
+      <Group id="mainContent" translation="[100, 50]">
+        <!-- Title -->
+        <ScrollingText id="title" horizAlign="left" font="font:LargeBoldSystemFont" maxWidth="1100" height="70" />
+
+        <!-- Meta Row: LayoutGroup reflows automatically when items are removed -->
+        <LayoutGroup id="topLevelDetails" layoutDirection="horiz" itemSpacings="[18]" translation="[0, 80]">
+          <LayoutGroup id="runtimeContainer" layoutDirection="horiz" itemSpacings="[8]">
+            <Poster id="runtimeIcon" width="24" height="24" uri="pkg:/images/icons/35px/clock.png" />
+            <Text id="runtime" vertAlign="center" font="font:SmallestSystemFont" height="24" />
+          </LayoutGroup>
+
+          <LayoutGroup id="numberofepisodesContainer" layoutDirection="horiz" itemSpacings="[8]">
+            <Poster id="numberofepisodesIcon" width="24" height="24" uri="pkg:/images/icons/35px/tv.png" />
+            <Text id="numberofepisodes" vertAlign="center" font="font:SmallestSystemFont" height="24" />
+          </LayoutGroup>
+
+          <LayoutGroup id="releasedContainer" layoutDirection="horiz" itemSpacings="[8]">
+            <Poster id="releasedIcon" width="24" height="24" uri="pkg:/images/icons/35px/calendar.png" />
+            <Text id="released" vertAlign="center" font="font:SmallestSystemFont" height="24" />
+          </LayoutGroup>
+
+          <LayoutGroup id="ratingContainer" layoutDirection="horiz" itemSpacings="[8]">
+            <Poster id="ratingIcon" width="24" height="24" uri="pkg:/images/icons/35px/rating.png" />
+            <Text id="rating" vertAlign="center" font="font:SmallestBoldSystemFont" height="24" />
+          </LayoutGroup>
+
+          <LayoutGroup id="communityReviewContainer" layoutDirection="horiz" itemSpacings="[8]">
+            <Poster id="communityReviewIcon" height="24" width="24" uri="pkg:/images/sharp_star_white_18dp.png" blendColor="#FFD700" />
+            <Text id="communityReview" vertAlign="center" font="font:SmallestSystemFont" height="24" />
+          </LayoutGroup>
+        </LayoutGroup>
+
+        <!-- Overview -->
+        <Text id="overview" wrap="true" lineSpacing="5" maxLines="4" width="1100" font="font:SmallestSystemFont" color="#f2f2f2ff" translation="[0, 130]" />
+      </Group>
+
+      <!-- Action Buttons pinned row at bottom -->
+      <ButtonGroupHoriz id="buttons" itemSpacings="[8]" translation="[100, 852]">
+        <IconButton id="resume" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/resume.png" text="Resume" height="75" width="140" />
+        <IconButton id="play" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/play.png" text="Play" height="75" width="140" />
+        <IconButton id="shuffle" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/shuffle.png" text="Shuffle" height="75" width="140" />
+        <IconButton id="watched-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/check.png" text="Played" height="75" width="140" />
+        <IconButton id="favorite-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/heart.png" text="Favorite" height="75" width="140" />
+        <IconButton id="extras" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/extras.png" text="More" height="75" width="140" />
+        <IconButton id="info-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/info.png" text="Info" height="75" width="140" />
+        <IconButton id="delete" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/trash.png" text="Delete" height="75" width="140" />
+      </ButtonGroupHoriz>
+    </Group>
+
+    <Poster id="tvshowPoster" width="300" height="450" translation="[1500, 100]">
+      <PlayedCheckmark id="playedIndicator" translation="[240, 0]" />
+    </Poster>
+
+    <!-- Slider for Seasons and More Like This -->
+    <ExtrasSlider visible="false" id="tvSeasonExtras" />
+
+    <Animation id="seriesDetailsSlider" duration=".4" repeat="false" easeFunction="linear">
+      <Vector2DFieldInterpolator
+        id="seriesDetailsSliderInterp"
+        key="[0.0, 1.0]"
+        keyValue="[[0, 0], [0, 0]]"
+        fieldToInterp="detailsGroup.translation" />
+    </Animation>
+  </children>
+
+  <interface>
+    <field id="buttonSelected" type="string" alwaysNotify="true" />
+    <field id="itemContent" type="node" onChange="itemContentChanged" />
+    <field id="seasonData" type="node" onChange="onSeasonDataChanged" />
+    <field id="displayResumeButton" type="bool" value="true" onChange="onDisplayResumeButtonChange" />
+    <field id="selectedButtonIndex" type="integer" value="-1" />
+    <field id="quickPlayNode" type="node" alwaysNotify="true" />
+    <field id="playSeriesFromStart" type="bool" alwaysNotify="true" />
+    <field id="refreshSeasonDetailsData" type="bool" alwaysNotify="true" />
+    <field id="resumeTicks" type="longinteger" value="0" onChange="onResumeTicksChange" />
+  </interface>
+
+</component>

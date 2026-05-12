@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="LoadFilterDataTask" extends="Task">
+
+  <interface>
+    <!-- Inputs -->
+    <field id="parentId"   type="string"      value="" />
+    <field id="itemType"   type="string"      value="" />
+
+    <!-- Outputs -->
+    <field id="genres"     type="stringarray" />
+    <field id="tags"       type="array"       />
+    <field id="dataLoaded" type="boolean"     value="false" />
+  </interface>
+
+</component>

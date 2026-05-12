@@ -1,0 +1,14 @@
+sub init()
+    m.top.layoutDirection = "horiz"
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+
+    if key = "up" or key = "down"
+        m.top.escape = key
+        return true
+    end if
+
+    return false
+end function

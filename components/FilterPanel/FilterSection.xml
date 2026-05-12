@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="FilterSection" extends="Group">
+
+  <children>
+    <!-- Section header background (full-width highlight strip) -->
+    <Rectangle
+      id="sectionHeaderBg"
+      width="420"
+      height="50" />
+
+    <!-- Section title label -->
+    <Label
+      id="sectionLabel"
+      font="font:SmallBoldSystemFont"
+      height="50"
+      width="300"
+      vertAlign="center"
+      translation="[40, 0]" />
+
+    <!-- Selected-count badge -->
+    <Label
+      id="countBadge"
+      font="font:SmallestSystemFont"
+      height="50"
+      width="60"
+      horizAlign="right"
+      vertAlign="center"
+      translation="[330, 0]"
+      text="" />
+
+    <!-- Expand / collapse indicator -->
+    <Label
+      id="collapseIndicator"
+      text="▼"
+      font="font:SmallestSystemFont"
+      height="50"
+      width="30"
+      horizAlign="center"
+      vertAlign="center"
+      translation="[390, 0]" />
+
+    <!-- CheckList for filter items -->
+    <CheckList
+      id="itemsList"
+      translation="[20, 55]"
+      itemSize="[380, 52]"
+      itemSpacing="[0, 4]"
+      numRows="8"
+      focusFootprintBitmapUri=""
+      drawFocusFeedback="false"
+      vertFocusAnimationStyle="floatingFocus"
+      visible="true" />
+  </children>
+
+  <interface>
+    <!-- Input: display title for this section -->
+    <field id="sectionTitle" type="string" value=""
+      onChange="onTitleChanged" />
+
+    <!-- Input: array of filter option labels (stringarray) or objects with name and imageUrl (array) -->
+    <field id="items" type="array"
+      onChange="onItemsChanged" />
+
+    <!-- Output: currently checked option labels -->
+    <field id="selectedItems" type="stringarray" />
+
+    <!-- Output: fires true whenever selection changes -->
+    <field id="sectionChanged" type="boolean" value="false" />
+
+    <!-- Output: computed height of this section for stacking -->
+    <field id="sectionHeight" type="integer" value="55" />
+
+    <!-- Input: set true to clear all checkmarks -->
+    <field id="clearSelections" type="boolean" value="false"
+      onChange="onClearSelections" />
+  </interface>
+
+</component>

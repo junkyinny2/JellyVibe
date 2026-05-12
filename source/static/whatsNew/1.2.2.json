@@ -1,0 +1,14 @@
+[
+  {
+    "description": "Added Info button to movie details for additional information display",
+    "author": "JellyVibe Team"
+  },
+  {
+    "description": "Fixed dialog text color for proper readability",
+    "author": "JellyVibe Team"
+  },
+  {
+    "description": "Added person icon to profile display",
+    "author": "JellyVibe Team"
+  }
+]

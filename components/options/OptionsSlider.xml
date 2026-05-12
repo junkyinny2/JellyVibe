@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="OptionsSlider" extends="PanelSet">
+  <children>
+    <ListPanel id="panel">
+      <!-- Emby Frosty Background -->
+      <Rectangle id="backdrop"
+        translation="[0, 0]"
+        color="#020B2A"
+        opacity="0.85"
+        width="575"
+        height="1080" />
+      
+      <!-- Breathable Typography -->
+      <LabelList id="panelList"
+        itemSize="[495, 80]"
+        itemSpacing="[0, 10]"
+        translation="[40, 100]"
+        color="#aaaaaa"
+        focusedColor="#ffffff"
+        focusBitmapUri="pkg:/images/9patch/filled-rounded.9.png"
+        focusBitmapBlendColor="#333333">
+        <ContentNode id="fieldList" role="content" />
+      </LabelList>
+    </ListPanel>
+  </children>
+  <interface>
+    <field id="buttons" type="nodearray" onChange="setFields" />
+    <field id="options" type="nodearray" onChange="setFields" />
+    <field id="closeSidePanel" type="boolean" alwaysNotify="true" />
+  </interface>
+
+</component>

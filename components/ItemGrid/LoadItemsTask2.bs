@@ -1,0 +1,580 @@
+import "pkg:/source/api/baserequest.bs"
+import "pkg:/source/api/Image.bs"
+import "pkg:/source/api/Items.bs"
+import "pkg:/source/api/sdk.bs"
+import "pkg:/source/enums/ImageType.bs"
+import "pkg:/source/utils/config.bs"
+import "pkg:/source/utils/deviceCapabilities.bs"
+import "pkg:/source/utils/misc.bs"
+
+sub init()
+    m.top.filter = "All"
+    m.top.sortField = "SortName"
+    m.top.functionName = "loadItems"
+
+    m.top.limit = 60
+end sub
+
+sub loadItems()
+    results = []
+
+    sort_field = m.top.sortField
+
+    if m.top.sortAscending = true
+        sort_order = "Ascending"
+    else
+        sort_order = "Descending"
+    end if
+
+    if m.top.ItemType = "LogoImage"
+        logoImageExists = api.items.HeadImageURLByName(m.top.itemId, ImageType.LOGO)
+        if logoImageExists
+            m.top.content = [api.items.GetImageURL(m.top.itemId, ImageType.LOGO, 0, { "format": "Png", "maxHeight": 500, "maxWidth": 500, "quality": "90" })]
+        else
+            m.top.content = []
+        end if
+
+        return
+    end if
+
+    params = {
+        limit: m.top.limit,
+        StartIndex: m.top.startIndex,
+        parentid: m.top.itemId,
+        SortBy: sort_field,
+        SortOrder: sort_order,
+        recursive: m.top.recursive,
+        Fields: "Overview, RecursiveItemCount",
+        StudioIds: m.top.studioIds,
+        genreIds: m.top.genreIds,
+        TagIds: m.top.tagIds,
+        Tags: m.top.tags
+    }
+
+    if m.top.tags <> invalid and m.top.tags <> ""
+        print "[FILTER] Filtering by tag=" + m.top.tags + " itemId=" + m.top.itemId
+    end if
+
+    ' Handle special case when getting names starting with numeral
+    if m.top.NameStartsWith <> ""
+        if m.top.NameStartsWith = "#"
+            if m.top.ItemType = "LiveTV" or m.top.ItemType = "TvChannel"
+                params.searchterm = "A"
+                params.append({ parentid: " " })
+            else
+                params.NameLessThan = "A"
+            end if
+        else
+            if m.top.ItemType = "LiveTV" or m.top.ItemType = "TvChannel"
+                params.searchterm = m.top.nameStartsWith
+                params.append({ parentid: " " })
+            else
+                params.NameStartsWith = m.top.nameStartsWith
+            end if
+        end if
+    end if
+
+    'reset data
+    if LCase(m.top.searchTerm) = LCase(tr("all"))
+        params.searchTerm = " "
+    else if m.top.searchTerm <> ""
+        params.searchTerm = m.top.searchTerm
+    end if
+
+    filter = LCase(m.top.filter)
+    if filter = "all"
+        ' do nothing
+    else if filter = "favorites"
+        params.append({ Filters: "IsFavorite" })
+        params.append({ isFavorite: true })
+    else if filter = "unplayed"
+        params.append({ Filters: "IsUnplayed" })
+    else if filter = "played"
+        params.append({ Filters: "IsPlayed" })
+    else if filter = "resumable"
+        params.append({ Filters: "IsResumable" })
+    else if filter = "features"
+        if isChainValid(m.top.filterOptions, "Features")
+            featureFilterList = m.top.filterOptions.Features
+            if featureFilterList.instr("Subtitles") <> -1
+                params.append({ HasSubtitles: true })
+            end if
+            if featureFilterList.instr("Special Features") <> -1
+                params.append({ HasSpecialFeature: true })
+            end if
+            if featureFilterList.instr("Theme Song") <> -1
+                params.append({ HasThemeSong: true })
+            end if
+            if featureFilterList.instr("Theme Video") <> -1
+                params.append({ HasThemeVideo: true })
+            end if
+        end if
+    end if
+
+    if filter <> "features"
+        if isValid(m.top.filterOptions)
+            if m.top.filterOptions.count() > 0
+                params.append(m.top.filterOptions)
+            end if
+        end if
+    end if
+
+    if m.top.ItemType <> ""
+        params.append({ IncludeItemTypes: m.top.ItemType })
+    end if
+
+    if m.top.ItemType = "LiveTV"
+        url = "LiveTv/Channels"
+        params.append({ UserId: m.global.session.user.id })
+    else if m.top.view = "Networks"
+        url = "Studios"
+        params.append({ UserId: m.global.session.user.id })
+    else if isStringEqual(m.top.view, "Genres")
+        url = "Genres"
+        params.append({ UserId: m.global.session.user.id, includeItemTypes: m.top.itemType })
+    else if LCase(m.top.view) = "tags"
+        url = "Items"
+        ' Query items to collect tags - high limit for full coverage
+        params = {
+            UserId: m.global.session.user.id,
+            ParentId: m.top.itemId,
+            Fields: "Tags,ImageTags,PrimaryImageAspectRatio",
+            Recursive: true,
+            Limit: 500,
+            SortBy: "SortName",
+            SortOrder: "Ascending"
+        }
+        print "[TAGS] Querying Tags with ParentId=" + m.top.itemId
+    else if m.top.ItemType = "MusicArtist"
+        url = "Artists"
+        params.append({
+            UserId: m.global.session.user.id,
+            Fields: "Genres"
+        })
+        params.IncludeItemTypes = "MusicAlbum,Audio"
+    else if m.top.ItemType = "AlbumArtists"
+        url = "Artists/AlbumArtists"
+        params.append({
+            UserId: m.global.session.user.id,
+            Fields: "Genres"
+        })
+        params.IncludeItemTypes = "MusicAlbum,Audio"
+    else if m.top.ItemType = "MusicAlbum"
+        url = "Items"
+        params.append({ ImageTypeLimit: 1, UserId: m.global.session.user.id })
+        params.append({ EnableImageTypes: "Primary,Backdrop,Banner,Thumb" })
+    else if m.top.ItemType = "audiobooks"
+        params.append({ mediaTypes: "Audio", UserId: m.global.session.user.id })
+        params.append({ Filters: "IsNotFolder" })
+        params.append({ EnableImageTypes: "Primary,Backdrop,Banner,Thumb" })
+        url = "Items"
+    else if LCase(m.top.ItemType) = "nextup"
+        url = "Shows/NextUp"
+        params.limit = 100 ' If you have more than 100 in your Next Up queue, maybe go outside a bit more.
+        params.append({ ImageTypeLimit: 1 })
+        params.append({ EnableImageTypes: "Primary,Backdrop,Banner,Thumb" })
+    else if isStringEqual(m.top.ItemType, "mylist")
+        data = api.GetUserViews({ "userId": m.global.session.user.id })
+        if not isChainValid(data, "Items") then return
+
+        myListPlaylist = invalid
+
+        for each item in data.LookupCI("items")
+            if isStringEqual(item.LookupCI("CollectionType"), "playlists")
+                myListPlaylist = api.items.Get({
+                    "userid": m.global.session.user.id,
+                    "includeItemTypes": "Playlist",
+                    "nameStartsWith": "|My List|",
+                    "parentId": item.LookupCI("id")
+                })
+                exit for
+            end if
+        end for
+
+        if not isValid(myListPlaylist) or not isValidAndNotEmpty(myListPlaylist.items) then return
+
+        playlistID = myListPlaylist.items[0].LookupCI("id")
+
+        if not isValid(playlistID) then return
+
+        url = "/items/"
+
+        params.append({
+            UserId: m.global.session.user.id,
+            ImageTypeLimit: 1,
+            EnableImageTypes: `${ImageType.PRIMARY}, ${ImageType.BACKDROP}, ${ImageType.THUMB}`,
+            Limit: 50,
+            EnableTotalRecordCount: false,
+            ParentId: playlistID
+        })
+    else
+        params.append({
+            UserId: m.global.session.user.id
+        })
+        url = "Items"
+    end if
+
+    resp = APIRequest(url, params)
+    data = getJson(resp)
+
+    ' If user has filtered by #, include special characters sorted after Z as well
+    if isValid(params.NameLessThan)
+        if LCase(params.NameLessThan) = "a"
+            ' Use same params except for name filter param
+            params.NameLessThan = ""
+            params.NameStartsWithOrGreater = "z"
+
+            ' Perform 2nd API lookup for items starting with Z or greater
+            startsWithZAndGreaterResp = APIRequest(url, params)
+            startsWithZAndGreaterData = getJson(startsWithZAndGreaterResp)
+
+            if isValidAndNotEmpty(startsWithZAndGreaterData)
+                specialCharacterItems = []
+
+                ' Filter out items starting with Z
+                for each item in startsWithZAndGreaterData.Items
+                    itemName = LCase(item.name)
+                    if not itemName.StartsWith("z")
+                        specialCharacterItems.Push(item)
+                    end if
+                end for
+
+                ' Append data to results from before A
+                data.Items.Append(specialCharacterItems)
+                data.TotalRecordCount += specialCharacterItems.Count()
+            end if
+        end if
+    end if
+
+    if data <> invalid
+
+        if isStringEqual(m.top.view, "Tags")
+            tagsList = []
+            uniqueTags = {}
+            tagImages = {} ' Store sample images for each tag
+            tagChildren = {} ' Store sample child nodes for each tag
+            itemCount = 0
+            tagItemCount = 0
+
+            print "[TAGS] data type=" + type(data)
+            if type(data) = "roAssociativeArray"
+                if isValid(data.Items)
+                    itemCount = data.Items.Count()
+                end if
+                print "[TAGS] data.Items count=" + Stri(itemCount)
+            else if type(data) = "roArray"
+                itemCount = data.Count()
+                print "[TAGS] data is flat array count=" + Stri(itemCount)
+            end if
+
+            if type(data) = "roAssociativeArray" and isValid(data.Items)
+                sampleCount = 0
+                for each item in data.Items
+                    sampleCount++
+                    if sampleCount <= 3
+                        itemName = ""
+                        if isValid(item.Name) then itemName = item.Name
+                        if isValid(item.name) then itemName = item.name
+                        print "[TAGS] sample item " + Stri(sampleCount) + " name=" + itemName
+                    end if
+
+                    tagArray = invalid
+                    if isValid(item.Tags) and type(item.Tags) = "roArray"
+                        tagArray = item.Tags
+                        if sampleCount <= 3
+                            print "[TAGS] sample item " + Stri(sampleCount) + " Tags array count=" + Stri(tagArray.Count())
+                            if tagArray.Count() > 0
+                                print "[TAGS] sample item " + Stri(sampleCount) + " first tag type=" + type(tagArray[0])
+                                if type(tagArray[0]) = "roAssociativeArray"
+                                    print "[TAGS] sample item " + Stri(sampleCount) + " first tag keys=" + tagArray[0].Keys().Join(",")
+                                else if type(tagArray[0]) = "roString"
+                                    print "[TAGS] sample item " + Stri(sampleCount) + " first tag value=" + tagArray[0]
+                                end if
+                            end if
+                        end if
+                    else if isValid(item.TagItems) and type(item.TagItems) = "roArray"
+                        tagArray = item.TagItems
+                    end if
+
+                    if tagArray <> invalid
+                        tagItemCount++
+                        ' Get item image for tag thumbnail
+                        itemImage = ""
+                        if isValid(item.Id) and isValid(item.ImageTags) and isValid(item.ImageTags.Primary)
+                            itemImage = api.items.GetImageURL(item.Id, "primary", 0, { "maxWidth": 270, "maxHeight": 270 })
+                        end if
+
+                        for each tag in tagArray
+                            tagStr = ""
+                            if (type(tag) = "String" or type(tag) = "roString") and tag <> ""
+                                tagStr = tag
+                            else if type(tag) = "roAssociativeArray"
+                                if isValid(tag.Name) and tag.Name <> ""
+                                    tagStr = tag.Name
+                                else if isValid(tag.name) and tag.name <> ""
+                                    tagStr = tag.name
+                                end if
+                            end if
+                            if tagStr <> ""
+                                lcTag = LCase(tagStr)
+                                if not isValid(uniqueTags[lcTag])
+                                    uniqueTags[lcTag] = tagStr
+                                    tagChildren[lcTag] = []
+                                    ' Store first available image for this tag
+                                    if itemImage <> ""
+                                        tagImages[lcTag] = itemImage
+                                    end if
+                                end if
+                                ' Collect up to 4 sample children for 2x2 grid
+                                if tagChildren[lcTag].Count() < 4
+                                    childNode = CreateObject("roSGNode", "MovieData")
+                                    childNode.id = item.id
+                                    childNode.posterUrl = api.items.GetImageURL(item.id, "primary", 0, { "maxWidth": 200, "maxHeight": 300 })
+                                    childNode.backdropUrl = api.items.GetImageURL(item.id, "backdrop", 0, { "maxWidth": 1920, "maxHeight": 1080 })
+                                    tagChildren[lcTag].push(childNode)
+                                end if
+                            end if
+                        end for
+                    end if
+                end for
+            end if
+
+            print "[TAGS] Items with Tags=" + Stri(tagItemCount) + " Unique tags=" + Stri(uniqueTags.Count())
+
+            for each tagKey in uniqueTags
+                tagValue = uniqueTags[tagKey]
+                tagImage = ""
+                if isValid(tagImages[tagKey])
+                    tagImage = tagImages[tagKey]
+                end if
+                tagsList.push({ Name: tagValue, Id: tagValue, Type: "Tag", ImageUrl: tagImage, Children: tagChildren[tagKey] })
+            end for
+
+            ' Sort tags alphabetically by name (simple bubble sort)
+            if tagsList.Count() > 1
+                for i = 0 to tagsList.Count() - 2
+                    for j = 0 to tagsList.Count() - 2 - i
+                        if LCase(tagsList[j].Name) > LCase(tagsList[j + 1].Name)
+                            temp = tagsList[j]
+                            tagsList[j] = tagsList[j + 1]
+                            tagsList[j + 1] = temp
+                        end if
+                    end for
+                end for
+            end if
+
+            data = { Items: tagsList, TotalRecordCount: tagsList.Count() }
+        end if
+
+        ' Normalize flat array responses
+        if type(data) = "roArray"
+            data = { Items: data, TotalRecordCount: data.Count() }
+        end if
+
+        if data.TotalRecordCount <> invalid then m.top.totalRecordCount = data.TotalRecordCount
+
+        for each item in data.Items
+            tmp = invalid
+
+            ' Ensure item is an object if we're going to check .Type
+            itemType = ""
+            if type(item) = "roAssociativeArray"
+                if item.Type <> invalid then itemType = item.Type
+            end if
+
+            if m.top.ItemType = "audiobooks"
+                if itemType = "AudioBook"
+                    tmp = CreateObject("roSGNode", "MusicSongData")
+                    tmp.posterUrl = api.items.GetImageURL(item.id, "primary", 0, { "maxHeight": 280, "maxWidth": 280, "quality": "90" })
+                    tmp.type = "audiobook"
+                    tmp.json = item
+                    tmp.title = item.name
+                end if
+            else
+                if itemType = "Movie" or itemType = "MusicVideo"
+                    tmp = CreateObject("roSGNode", "MovieData")
+                else if itemType = "Series"
+                    tmp = CreateObject("roSGNode", "SeriesData")
+                else if itemType = "BoxSet" or itemType = "ManualPlaylistsFolder"
+                    tmp = CreateObject("roSGNode", "CollectionData")
+                else if itemType = "TvChannel"
+                    tmp = CreateObject("roSGNode", "ChannelData")
+                else if itemType = "Folder" or itemType = "ChannelFolderItem" or itemType = "CollectionFolder"
+                    tmp = CreateObject("roSGNode", "FolderData")
+                else if itemType = "Video" or itemType = "Recording"
+                    tmp = CreateObject("roSGNode", "VideoData")
+                else if itemType = "Photo"
+                    tmp = CreateObject("roSGNode", "PhotoData")
+                else if itemType = "PhotoAlbum"
+                    tmp = CreateObject("roSGNode", "FolderData")
+                else if itemType = "Playlist"
+                    tmp = CreateObject("roSGNode", "PlaylistData")
+                    tmp.type = "Playlist"
+                    tmp.image = PosterImage(item.id, { "maxHeight": 450, "maxWidth": 450, "quality": "90" })
+                else if itemType = "Episode"
+                    tmp = CreateObject("roSGNode", "TVEpisode")
+                    tmp.title = item.name
+
+                    seasonName = ` - ${item.LookupCI("SeasonName")}`
+
+                    if isValid(item.LookupCI("IndexNumber"))
+                        seasonName += ` ${tr("Episode")} ${item.LookupCI("IndexNumber")}`
+                    end if
+
+                    tmp.fullNameWithShowTitle = `${item.LookupCI("seriesname")}${seasonName} - ${item.LookupCI("name")}`
+
+                    if LCase(m.top.ItemType) = "nextup"
+                        tmp.type = "Episode"
+                    end if
+                else if LCase(itemType) = "recording"
+                    tmp = CreateObject("roSGNode", "RecordingData")
+                else if itemType = "Genre"
+                    itemLimit = 7
+                    if m.top.numberOfColumns <> invalid then itemLimit = m.top.numberOfColumns
+
+                    tmp = CreateObject("roSGNode", "ContentNode")
+                    tmp.title = item.name
+
+                    genreData = api.items.Get({
+                        UserId: m.global.session.user.id,
+                        SortBy: "Random",
+                        SortOrder: "Ascending",
+                        IncludeItemTypes: m.top.itemType,
+                        Recursive: true,
+                        Fields: "PrimaryImageAspectRatio,MediaSourceCount,BasicSyncInfo",
+                        ImageTypeLimit: 1,
+                        EnableImageTypes: "Primary",
+                        Limit: itemLimit,
+                        GenreIds: item.id,
+                        EnableTotalRecordCount: false,
+                        ParentId: m.top.itemId
+                    })
+
+                    if genreData.Items.Count() > (itemLimit - 2)
+                        ' Add View All item to the start of the row
+                        row = tmp.createChild("FolderData")
+
+                        row.libraryID = m.top.genreIds
+                        row.parentFolder = m.top.itemId
+                        row.id = m.top.itemId
+                        row.title = tr("View All") + " " + item.name
+                        item.name = tr("View All") + " " + item.name
+                        row.json = item
+                        row.type = "Folder"
+                        row.itemType = m.top.itemType
+
+                        if LCase(m.top.itemType) = "movie"
+                            genreItemImage = api.items.GetImageURL(item.id)
+                        else
+                            genreItemImage = invalid
+                            row.posterURL = invalid
+                        end if
+
+                        row.FHDPOSTERURL = genreItemImage
+                        row.HDPOSTERURL = genreItemImage
+                        row.SDPOSTERURL = genreItemImage
+
+                        genreData.Items.Pop()
+                    end if
+
+                    for each genreItem in genreData.Items
+                        if LCase(m.top.itemType) = "movie"
+                            row = tmp.createChild("MovieData")
+                        else
+                            row = tmp.createChild("SeriesData")
+                        end if
+
+                        genreItemImage = api.items.GetImageURL(genreItem.id)
+                        row.title = genreItem.name
+                        row.FHDPOSTERURL = genreItemImage
+                        row.HDPOSTERURL = genreItemImage
+                        row.SDPOSTERURL = genreItemImage
+
+                        genreItem.AddReplace("passedData", m.top.passToItem)
+
+                        row.json = genreItem
+
+                        row.id = genreItem.id
+                        row.type = genreItem.type
+                    end for
+
+                else if itemType = "Tag" or isStringEqual(m.top.view, "Tags")
+                    tmp = CreateObject("roSGNode", "FolderData")
+                    tagImage = ""
+                    if type(item) = "roString"
+                        tmp.title = item
+                        tmp.id = item
+                        tagJson = { name: item, id: item, type: "Tag" }
+                    else
+                        tmp.title = item.name
+                        tmp.id = item.id
+                        tagJson = item
+                        tagJson.AddReplace("type", "Tag")
+                        ' Get image URL from tag data if available
+                        if isValid(item.ImageUrl) and item.ImageUrl <> ""
+                            tagImage = item.ImageUrl
+                        end if
+                    end if
+                    tmp.type = "Tag"
+                    tmp.parentFolder = m.top.itemId
+                    tmp.json = tagJson
+
+                    ' Set poster images if we have an image URL
+                    if tagImage <> ""
+                        tmp.FHDPOSTERURL = tagImage
+                        tmp.HDPOSTERURL = tagImage
+                        tmp.SDPOSTERURL = tagImage
+                        tmp.posterUrl = tagImage
+                    end if
+
+                    ' Add sample children for 2x2 grid
+                    if isValid(item.Children)
+                        for each child in item.Children
+                            tmp.appendChild(child)
+                        end for
+                    end if
+
+                else if itemType = "Studio"
+                    tmp = CreateObject("roSGNode", "FolderData")
+                else if itemType = "MusicAlbum"
+                    tmp = CreateObject("roSGNode", "MusicAlbumData")
+                    tmp.type = "MusicAlbum"
+                    if api.items.HeadImageURLByName(item.id, "primary")
+                        tmp.posterURL = ImageURL(item.id, "Primary")
+                    else
+                        tmp.posterURL = ImageURL(item.id, "backdrop")
+                    end if
+                else if itemType = "MusicArtist"
+                    tmp = CreateObject("roSGNode", "MusicArtistData")
+                else if itemType = "Audio"
+                    tmp = CreateObject("roSGNode", "MusicSongData")
+                    tmp.type = "Audio"
+                    tmp.image = api.items.GetImageURL(item.id, "primary", 0, { "maxHeight": 280, "maxWidth": 280, "quality": "90" })
+                else if itemType = "MusicGenre"
+                    tmp = CreateObject("roSGNode", "FolderData")
+                    tmp.title = item.name
+                    tmp.parentFolder = m.top.itemId
+                    tmp.json = item
+                    tmp.type = "Folder"
+                    tmp.posterUrl = api.items.GetImageURL(item.id, "primary", 0, { "maxHeight": 270, "maxWidth": 270, "quality": "90" })
+                else
+                    ' print `Unknown Type ${item.Type}`
+                end if
+            end if
+
+            if tmp <> invalid
+                item.AddReplace("passedData", m.top.passToItem)
+                if not isStringEqual(item.Type, "genre") and LCase(item.Type) <> "musicgenre"
+                    tmp.parentFolder = m.top.itemId
+                    tmp.json = item
+                    if item.UserData <> invalid and item.UserData.isFavorite <> invalid
+                        tmp.favorite = item.UserData.isFavorite
+                    end if
+                end if
+
+                results.push(tmp)
+            end if
+        end for
+    end if
+    m.top.content = results
+end sub

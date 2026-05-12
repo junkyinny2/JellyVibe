@@ -1,0 +1,18 @@
+[
+  {
+    "description": "Added tags navigation - click any tag to view filtered movie list",
+    "author": "JellyVibe Team"
+  },
+  {
+    "description": "Fixed home screen navigation requiring multiple enter presses",
+    "author": "JellyVibe Team"
+  },
+  {
+    "description": "Fixed auto-reentry bug after video playback",
+    "author": "JellyVibe Team"
+  },
+  {
+    "description": "Optimized tag loading speed with 100-item sampling",
+    "author": "JellyVibe Team"
+  }
+]

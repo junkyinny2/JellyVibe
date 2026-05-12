@@ -1,0 +1,73 @@
+<component name="StreamSelectorItem" extends="Group">
+  <script type="text/brightscript">
+    <![CDATA[
+    sub init()
+        m.itemFocus = m.top.findNode("itemFocus")
+        m.itemText = m.top.findNode("itemText")
+        m.itemChecked = m.top.findNode("itemChecked")
+        
+        m.top.observeField("itemContent", "itemContentChanged")
+        m.top.observeField("focusPercent", "onFocusPercentChanged")
+        m.top.observeField("width", "onWidthHeightChanged")
+        m.top.observeField("height", "onWidthHeightChanged")
+    end sub
+
+    function isValid(obj) as boolean
+        return obj <> invalid
+    end function
+
+    sub itemContentChanged()
+        itemData = m.top.itemContent
+        if not isValid(itemData) then return
+        
+        m.itemText.text = itemData.title
+        
+        ' Observe the checked field for changes
+        itemData.unobserveField("checked")
+        itemData.observeField("checked", "onCheckedChange")
+        onCheckedChange()
+    end sub
+
+    sub onCheckedChange()
+        itemData = m.top.itemContent
+        if isValid(itemData)
+            m.itemChecked.visible = (itemData.checked = true)
+        end if
+    end sub
+
+    sub onFocusPercentChanged()
+        m.itemFocus.visible = (m.top.focusPercent > 0.5)
+        if m.top.focusPercent > 0.5
+            m.itemText.color = "#FFFFFF"
+            m.itemChecked.blendColor = "#FFFFFF"
+        else
+            m.itemText.color = "#FFFFFF"
+            m.itemChecked.blendColor = "#FFFFFF"
+        end if
+    end sub
+
+    sub onWidthHeightChanged()
+        m.itemFocus.width = m.top.width
+        m.itemFocus.height = m.top.height
+        m.itemText.width = m.top.width - 80
+        m.itemText.height = m.top.height
+        m.itemChecked.translation = [m.top.width - 44, (m.top.height - 24) / 2]
+    end sub
+    ]]>
+  </script>
+
+  <interface>
+    <field id="itemContent" type="node" />
+    <field id="focusPercent" type="float" />
+    <field id="itemHasFocus" type="boolean" />
+    <field id="index" type="integer" />
+    <field id="width" type="float" />
+    <field id="height" type="float" />
+  </interface>
+
+  <children>
+    <Rectangle id="itemFocus" visible="false" color="#9C63B8" />
+    <Label id="itemText" translation="[20, 0]" color="#FFFFFF" font="font:SmallestSystemFont" vertAlign="center" />
+    <Poster id="itemChecked" visible="false" uri="pkg:/images/icons/check.png" width="24" height="24" blendColor="#FFFFFF" />
+  </children>
+</component>

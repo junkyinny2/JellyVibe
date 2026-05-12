@@ -1,0 +1,2223 @@
+import "pkg:/source/api/Image.bs"
+import "pkg:/source/api/Items.bs"
+import "pkg:/source/utils/config.bs"
+import "pkg:/source/utils/deviceCapabilities.bs"
+import "pkg:/source/utils/misc.bs"
+
+import "pkg:/source/enums/AnimationControl.bs"
+import "pkg:/source/enums/AnimationState.bs"
+import "pkg:/source/enums/ColorPalette.bs"
+import "pkg:/source/enums/ImageType.bs"
+import "pkg:/source/enums/KeyCode.bs"
+import "pkg:/source/enums/MediaStreamType.bs"
+import "pkg:/source/enums/PersonType.bs"
+import "pkg:/source/enums/PlaybackMethod.bs"
+import "pkg:/source/enums/String.bs"
+import "pkg:/source/enums/SubtitleSelection.bs"
+import "pkg:/source/enums/TaskControl.bs"
+import "pkg:/source/enums/VideoType.bs"
+import "pkg:/source/enums/ViewLoadStatus.bs"
+
+sub init()
+    initTimer = CreateObject("roTimespan")
+    initTimer.Mark()
+    traceStep("MOVIE_TRACE", "MovieDetails.init start")
+
+    ' Defer queueManager calls until metadata is loaded to avoid callFunc contention during scene creation.
+    m.pendingQueueInit = true
+    traceStep("MOVIE_TRACE", "MovieDetails.init deferred queueManager init")
+
+    m.performRotationCheck = true
+    traceStep("MOVIE_TRACE", "MovieDetails.init basic flags set")
+
+    m.container = m.top.findnode("container")
+    m.extrasGrid = m.top.findNode("extrasGrid")
+    m.extrasPanel = m.top.findNode("extrasGrp")
+    m.extrasPanelX = 0
+    if isValid(m.extrasPanel) and isValid(m.extrasPanel.translation) and m.extrasPanel.translation.Count() > 0
+        m.extrasPanelX = m.extrasPanel.translation[0]
+    end if
+    m.gridAnime = invalid
+    m.gridTranslationInterp = invalid
+    if isValid(m.extrasGrid)
+        ' (no targetTranslationY observer needed - RowList handles its own scrolling)
+    end if
+    m.top.optionsAvailable = false
+    traceStep("MOVIE_TRACE", "MovieDetails.init primary nodes wired")
+
+    m.movieExtras = m.top.findnode("movieExtras")
+    m.hasExtrasItems = false
+    if isValid(m.movieExtras)
+        m.movieExtras.observeField("hasItems", "onMovieExtrasHasItems")
+    end if
+
+    m.options = m.top.findNode("movieOptions")
+    m.infoGroup = m.top.findNode("infoGroup")
+    if isValid(m.infoGroup) and isValid(m.container)
+        ' Keep metadata as a single text row under title.
+        m.container.removeChild(m.infoGroup)
+    end if
+    m.communityRatingGroup = m.top.findNode("communityRatingGroup")
+    m.criticRatingGroup = m.top.findNode("criticRatingGroup")
+    m.releaseYearNode = m.top.findNode("releaseYear")
+    m.runtimeNode = m.top.findNode("runtime")
+    m.officialRatingNode = m.top.findNode("officialRating")
+    m.overviewGroup = m.top.findNode("overviewGroup")
+    m.overviewBackground = m.top.findNode("overviewBackground")
+    m.overviewBorder = m.top.findNode("overviewBorder")
+    m.overviewText = m.top.findNode("overview")
+    m.plotFocusAnchor = m.top.findNode("plotFocusAnchor")
+    m.titleNode = m.top.findNode("title")
+    m.metaRow2Node = m.top.findNode("metaRow2Text")
+    m.tagsTextNode = m.top.findNode("tagsText")
+    m.extrasHeaderStrip = m.top.findNode("extrasHeaderStrip")
+    m.defaultTitleMaxLines = 0
+    if isValid(m.titleNode)
+        m.defaultTitleMaxLines = m.titleNode.maxLines
+    end if
+    m.hasOverviewContent = true
+    m.useParentKeyHandling = false
+
+    m.actionButtonsRow = m.top.findNode("actionButtonsRow")
+    m.leftButtonArrow = m.top.findNode("leftButtonArrow")
+    m.rightButtonArrow = m.top.findNode("rightButtonArrow")
+    m.buttonGrp = m.top.findNode("buttons")
+    m.resumeButton = m.top.findNode("resume-button")
+    if isValid(m.buttonGrp)
+        if isValid(m.resumeButton) then m.buttonGrp.removeChild(m.resumeButton)
+        m.buttonCount = m.buttonGrp.getChildCount()
+
+        ' Movie control buttons use white focus with inverse black icon/text.
+        for i = 0 to m.buttonCount - 1
+            btn = m.buttonGrp.getChild(i)
+            if isValid(btn)
+                btn.focusBackground = ColorPalette.WHITE
+                btn.textColor = ColorPalette.WHITE
+                btn.focusTextColor = "#000000"
+                btn.focusIconBlendColor = "#000000"
+            end if
+        end for
+
+        ' Pre-process the resume button too if we found it
+        if isValid(m.resumeButton)
+            m.resumeButton.focusBackground = ColorPalette.WHITE
+            m.resumeButton.textColor = ColorPalette.WHITE
+            m.resumeButton.focusTextColor = "#000000"
+            m.resumeButton.focusIconBlendColor = "#000000"
+        end if
+
+        ' ButtonGroupHoriz consumes UP/DOWN via escape field — observe it here
+        m.buttonGrp.observeField("escape", "onButtonGroupEscape")
+    else
+        m.buttonCount = 0
+    end if
+    traceStep("MOVIE_TRACE", "MovieDetails.init button group setup done")
+
+    m.streamSelectorRow = m.top.findNode("streamSelectorRow")
+    m.dateAddedLabel = m.top.findNode("dateAdded")
+    m.detailsSlideAnime = m.top.findNode("detailsSlideAnime")
+    m.detailsContainerSlider = m.top.findNode("detailsContainerSlider")
+    m.selectorRowSlider = m.top.findNode("selectorRowSlider")
+    m.buttonRowSlider = m.top.findNode("buttonRowSlider")
+    m.dateAddedSlider = m.top.findNode("dateAddedSlider")
+    m.inlineExtrasClosing = false
+    m.suppressNextButtonEscape = false
+    if isValid(m.detailsSlideAnime)
+        m.detailsSlideAnime.observeField("state", "onDetailsSlideAnimeStateChanged")
+    end if
+    m.defaultContainerTranslation = [0, 0]
+    m.defaultSelectorRowTranslation = [0, 0]
+    m.defaultButtonGroupTranslation = [0, 0]
+    m.defaultDateAddedTranslation = [0, 0]
+
+    if isValid(m.container) then m.defaultContainerTranslation = [m.container.translation[0], m.container.translation[1]]
+    if isValid(m.streamSelectorRow) then m.defaultSelectorRowTranslation = [m.streamSelectorRow.translation[0], m.streamSelectorRow.translation[1]]
+    if isValid(m.actionButtonsRow) then m.defaultButtonGroupTranslation = [m.actionButtonsRow.translation[0], m.actionButtonsRow.translation[1]]
+    if isValid(m.dateAddedLabel) then m.defaultDateAddedTranslation = [m.dateAddedLabel.translation[0], m.dateAddedLabel.translation[1]]
+
+    m.inlineExtrasActive = false
+    m.extrasNavigationActive = false
+    m.inlineExtrasPadding = 24
+    m.inlineTitleTopY = 28
+    m.extrasPanelOpenY = 110
+    m.extrasPanelClosedY = 1008
+    if isValid(m.extrasPanel) and isValid(m.extrasPanel.translation) and m.extrasPanel.translation.Count() > 1
+        m.extrasPanelClosedY = m.extrasPanel.translation[1]
+    end if
+    m.extrasPanelFocusedOpacity = 0.85
+    m.extrasPanelRestOpacity = 0.65
+
+    m.moviePoster = m.top.findNode("moviePoster")
+    m.playedIndicator = m.top.findNode("playedIndicator")
+
+    m.loadStatus = ViewLoadStatus.INIT
+
+    hasSubtitleManagementPermissions = false
+    if isChainValid(m.global.session, "user.policy.EnableSubtitleManagement")
+        hasSubtitleManagementPermissions = m.global.session.user.policy.EnableSubtitleManagement
+    end if
+
+    ' Only allow those with EnableSubtitleManagement permissions to see Subtitles button
+    if not hasSubtitleManagementPermissions
+        editSubtitleButton = m.top.findNode("editSubtitlesButton")
+        if isValid(editSubtitleButton) and isValid(m.buttonGrp)
+            m.buttonGrp.removeChild(editSubtitleButton)
+        end if
+    end if
+
+    hasDeletePermissions = chainLookupReturn(m.global.session, "user.Policy.EnableContentDeletion", false)
+
+    ' Only allow those with EnableContentDeletion permissions to see Delete button
+    if not hasDeletePermissions
+        deleteButton = m.top.findNode("delete-button")
+        if isValid(deleteButton) and isValid(m.buttonGrp)
+            m.buttonGrp.removeChild(deleteButton)
+        end if
+    end if
+
+    ' Hide episode-only buttons by default
+    goToSeriesBtn = m.top.findNode("goToSeriesButton")
+    if isValid(goToSeriesBtn) and isValid(m.buttonGrp)
+        m.buttonGrp.removeChild(goToSeriesBtn)
+    end if
+    goToSeasonBtn = m.top.findNode("goToSeasonButton")
+    if isValid(goToSeasonBtn) and isValid(m.buttonGrp)
+        m.buttonGrp.removeChild(goToSeasonBtn)
+    end if
+
+    ' Only show Options button if enabled in settings
+    showOptionsButton = chainLookupReturn(m.global.session, "user.settings.`ui.itemdetail.showOptions`", false)
+    if not showOptionsButton
+        optionsButton = m.top.findNode("options-button")
+        if isValid(optionsButton) and isValid(m.buttonGrp)
+            m.buttonGrp.removeChild(optionsButton)
+        end if
+    end if
+
+    if isValid(m.buttonGrp)
+        m.buttonCount = m.buttonGrp.getChildCount()
+    end if
+    traceStep("MOVIE_TRACE", "MovieDetails.init permission/button pruning done")
+
+    ' Focus state tracking: 0 = overview, 1 = selectors, 2 = buttons
+    traceStep("MOVIE_TRACE", "MovieDetails.init focus block start")
+    m.focusRow = 2
+    m.overviewHighlightEnabled = false
+    m.selectedSelectorIndex = 0
+
+    traceStep("MOVIE_TRACE", "MovieDetails.init selectorNodes lookup start")
+    m.selectorNodes = [
+        m.top.findNode("videoButton"),
+        m.top.findNode("audioButton"),
+        m.top.findNode("subtitleButton")
+    ]
+    traceStep("MOVIE_TRACE", "MovieDetails.init selectorNodes lookup end")
+
+    m.previouslySelectedButtonIndex = -1
+
+    ' Mirror TVSeriesDetails button focus pattern
+    m.top.observeField("selectedButtonIndex", "onButtonSelectedChange")
+    ' DO NOT set focus here - let itemContentChanged handle it after buttons are configured
+    ' This prevents lockup when re-entering the screen
+    traceStep("MOVIE_TRACE", "MovieDetails.init focus state initialized")
+
+    m.top.observeField("itemContent", "itemContentChanged")
+
+    m.loadItemsTask = createObject("roSGNode", "LoadItemsTask")
+    if isValid(m.loadItemsTask)
+        m.loadItemsTask.observeField("content", "onMyListLoaded")
+        m.loadItemsTask.itemsToLoad = "isInMyList"
+    end if
+
+    m.metadataTask = createObject("roSGNode", "LoadItemsTask")
+    if isValid(m.metadataTask)
+        m.metadataTask.observeField("content", "onMetadataLoaded")
+        m.metadataTask.itemsToLoad = "metaData"
+    end if
+
+    traceStep("MOVIE_TRACE", "MovieDetails.init tasks created")
+    traceStep("MOVIE_TRACE", "MovieDetails.init end elapsedMs=" + stri(initTimer.TotalMilliseconds()).trim())
+end sub
+
+sub loadMovieById(movie as object)
+    if not isValid(movie) or not isValid(movie.id)
+        traceStep("MOVIE_TRACE", "MovieDetails.loadMovieById invalid movie payload")
+        stopLoadingSpinner()
+        return
+    end if
+
+    traceStep("MOVIE_TRACE", "MovieDetails.loadMovieById start id=" + movie.id)
+
+    if isValid(m.titleNode)
+        titleText = ""
+        if isValid(movie.title)
+            titleText = movie.title
+        else if isChainValid(movie, "json.Name")
+            titleText = movie.json.Name
+        end if
+
+        if isValidAndNotEmpty(titleText)
+            m.titleNode.text = titleText
+        end if
+    end if
+
+    m.hasExtrasItems = false
+    if isValid(m.movieExtras)
+        m.movieExtras.visible = false
+    end if
+    if isValid(m.buttonGrp)
+        m.buttonGrp.visible = false
+    end if
+    if isValid(m.streamSelectorRow)
+        m.streamSelectorRow.visible = false
+    end if
+    if isValid(m.dateAddedLabel)
+        m.dateAddedLabel.visible = false
+    end if
+
+    ' Load full metadata on a task so entering the movie screen does not block the UI thread.
+    if not isValid(m.metadataTask)
+        m.metadataTask = createObject("roSGNode", "LoadItemsTask")
+        if isValid(m.metadataTask)
+            m.metadataTask.observeField("content", "onMetadataLoaded")
+            m.metadataTask.itemsToLoad = "metaData"
+        end if
+    end if
+
+    if not isValid(m.metadataTask)
+        traceStep("MOVIE_TRACE", "MovieDetails.loadMovieById missing metadataTask id=" + movie.id)
+        stopLoadingSpinner()
+        m.global.sceneManager.callFunc("popScene")
+        return
+    end if
+
+    m.metadataLoadTimer = CreateObject("roTimespan")
+    if isValid(m.metadataLoadTimer)
+        m.metadataLoadTimer.Mark()
+    end if
+
+    m.metadataTask.itemId = movie.id
+    m.metadataTask.control = TaskControl.RUN
+    traceStep("MOVIE_TRACE", "MovieDetails.loadMovieById metadata task RUN id=" + movie.id)
+end sub
+
+sub onMetadataLoaded()
+    if not isValid(m.metadataTask)
+        traceStep("MOVIE_TRACE", "MovieDetails.onMetadataLoaded called with invalid metadataTask")
+        return
+    end if
+
+    elapsedMs = "n/a"
+    if isValid(m.metadataLoadTimer)
+        elapsedMs = stri(m.metadataLoadTimer.TotalMilliseconds()).trim()
+    end if
+
+    metadataResult = m.metadataTask.content
+    m.metadataTask.content = []
+
+    resultCount = 0
+    if isValid(metadataResult)
+        resultCount = metadataResult.Count()
+    end if
+    traceStep("MOVIE_TRACE", "MovieDetails.onMetadataLoaded received resultCount=" + stri(resultCount).trim() + " elapsedMs=" + elapsedMs)
+
+    if not isValidAndNotEmpty(metadataResult) or not isValid(metadataResult[0])
+        traceStep("MOVIE_TRACE", "MovieDetails.onMetadataLoaded invalid result")
+        stopLoadingSpinner()
+        m.global.sceneManager.callFunc("popScene")
+        return
+    end if
+
+    traceStep("MOVIE_TRACE", "MovieDetails.onMetadataLoaded setting itemContent")
+    m.top.itemContent = metadataResult[0]
+end sub
+
+sub onButtonSelectedChange()
+    traceStep("MOVIE_TRACE", "MovieDetails.onButtonSelectedChange updateFocus start index=" + stri(m.top.selectedButtonIndex).trim())
+    updateFocus()
+    traceStep("MOVIE_TRACE", "MovieDetails.onButtonSelectedChange updateFocus end")
+end sub
+
+function ensureValidSelectedButtonIndex() as integer
+    if not isValid(m.buttonGrp) or m.buttonCount <= 0
+        return -1
+    end if
+
+    if not isValid(m.top.selectedButtonIndex) or m.top.selectedButtonIndex < 0
+        m.top.selectedButtonIndex = 0
+    else if m.top.selectedButtonIndex >= m.buttonCount
+        m.top.selectedButtonIndex = m.buttonCount - 1
+    end if
+
+    return m.top.selectedButtonIndex
+end function
+
+function getSelectedButtonId() as string
+    selectedIdx = ensureValidSelectedButtonIndex()
+    if selectedIdx < 0 then return ""
+
+    if not isValid(m.buttonGrp) then return ""
+
+    focusedBtn = m.buttonGrp.getChild(selectedIdx)
+    if not isValid(focusedBtn) then return ""
+    if not isValid(focusedBtn.id) then return ""
+
+    return focusedBtn.id
+end function
+
+sub updateFocus()
+    overviewFocused = m.focusRow = 0 and m.overviewHighlightEnabled
+    overviewHighlightColor = ColorPalette.HIGHLIGHT
+
+    ' Move SGN focus first so that when we later set node.focus=false, hasFocus()/isInFocusChain()
+    ' already reflect the new state â€” prevents TextButton.applyVisualState from seeing stale focus.
+    if m.focusRow = 2 and isValid(m.buttonGrp)
+        m.buttonGrp.setFocus(true)
+        m.top.lastFocus = m.buttonGrp
+    else if m.focusRow = 1 and m.selectedSelectorIndex >= 0 and m.selectedSelectorIndex < m.selectorNodes.Count()
+        selectedSelector = m.selectorNodes[m.selectedSelectorIndex]
+        if isValid(selectedSelector)
+            selectedSelector.setFocus(true)
+            m.top.lastFocus = selectedSelector
+        end if
+    else if m.focusRow = 0
+        ' Call setFocus directly on plotFocusAnchor rather than on m.top.
+        ' Calling setFocus on a parent traverses children by XML order and stops
+        ' at the first VISIBLE focusable child â€” if plotFocusAnchor is hidden,
+        ' Roku skips it and lands on the first TextButton, causing both the
+        ' overview highlight AND the selector button to appear focused at once.
+        ' A direct call bypasses that traversal regardless of visibility.
+        if isValid(m.plotFocusAnchor)
+            m.plotFocusAnchor.setFocus(true)
+        end if
+        m.top.lastFocus = m.top
+    end if
+
+    if isValid(m.overviewBackground)
+        if overviewFocused
+            m.overviewBackground.color = overviewHighlightColor
+        else
+            m.overviewBackground.color = "0x00000000"
+        end if
+    end if
+    if isValid(m.overviewText)
+        if overviewFocused
+            m.overviewText.color = "#020B2Aff"
+        else
+            m.overviewText.color = "#f2f2f2ff"
+        end if
+    end if
+    if isValid(m.overviewBorder)
+        if overviewFocused
+            ' Borders disabled on standard Rectangle nodes to prevent warnings
+        else
+            ' Borders disabled on standard Rectangle nodes to prevent warnings
+        end if
+    end if
+
+    ' Row 2: Selectors â€” set focus field AFTER SGN focus has moved
+    for i = 0 to m.selectorNodes.Count() - 1
+        node = m.selectorNodes[i]
+        if isValid(node)
+            if m.focusRow = 1 and m.selectedSelectorIndex = i
+                node.focus = true
+            else
+                node.focus = false
+            end if
+        end if
+    end for
+
+    ' Row 3: Buttons — set focus field AFTER SGN focus has moved
+    if isValid(m.buttonGrp)
+        selectedIdx = ensureValidSelectedButtonIndex()
+        for i = 0 to m.buttonCount - 1
+            btn = m.buttonGrp.getChild(i)
+            if isValid(btn)
+                if m.focusRow = 2 and selectedIdx = i
+                    btn.focus = true
+                else
+                    btn.focus = false
+                end if
+            end if
+        end for
+        updateButtonScrollShift()
+    end if
+end sub
+
+sub updateButtonScrollShift()
+    if not isValid(m.buttonGrp) then return
+
+    index = ensureValidSelectedButtonIndex()
+    if index < 0 then index = 0
+
+    max_shift = 0
+    totalItems = m.buttonCount
+    ' With 940 clippingRect and 148 spacing, 6 buttons fit fully. The 7th peeks.
+    if totalItems > 6
+        max_shift = totalItems - 6
+    end if
+
+    shift = index - 5
+    if shift < 0 then shift = 0
+    if shift > max_shift then shift = max_shift
+
+    itemWidth = 148 ' 140 width + 8 spacing
+    m.buttonGrp.translation = [-shift * itemWidth, 0]
+
+    if isValid(m.leftButtonArrow)
+        m.leftButtonArrow.visible = shift > 0
+    end if
+
+    if isValid(m.rightButtonArrow)
+        m.rightButtonArrow.visible = shift < max_shift and max_shift > 0
+    end if
+end sub
+
+function getCurrentSelectorIndex() as integer
+    for i = 0 to m.selectorNodes.Count() - 1
+        node = m.selectorNodes[i]
+        if isValid(node) and node.isInFocusChain()
+            return i
+        end if
+    end for
+
+    return m.selectedSelectorIndex
+end function
+
+sub restoreSelectorFocusAfterExtrasExit(reason as string)
+    m.focusRow = 1
+
+    if not isValid(m.selectorNodes) or m.selectorNodes.Count() = 0
+        traceStep("MOVIE_TRACE", "MovieDetails.restoreSelectorFocusAfterExtrasExit no selectors reason=" + reason)
+        return
+    end if
+
+    if m.selectedSelectorIndex < 0 then m.selectedSelectorIndex = 0
+    if m.selectedSelectorIndex >= m.selectorNodes.Count() then m.selectedSelectorIndex = m.selectorNodes.Count() - 1
+
+    selectorNode = m.selectorNodes[m.selectedSelectorIndex]
+    if isValid(selectorNode)
+        m.top.lastFocus = selectorNode
+    end if
+    traceStep("MOVIE_TRACE", "MovieDetails.restoreSelectorFocusAfterExtrasExit state restore reason=" + reason + " index=" + stri(m.selectedSelectorIndex).trim())
+end sub
+
+sub openSelectorOptionsByIndex(selectorIndex as integer)
+    if not isValid(m.options) then return
+
+    traceStep("MOVIE_TRACE", "MovieDetails.openSelectorOptionsByIndex start selector=" + stri(selectorIndex).trim())
+    m.options.visible = true
+    m.options.setFocus(true)
+
+    if selectorIndex = 0
+        m.options.callFunc("showVideoMenu")
+    else if selectorIndex = 1
+        m.options.callFunc("showAudioMenu")
+    else
+        m.options.callFunc("showSubtitleMenu")
+    end if
+
+    traceStep("MOVIE_TRACE", "MovieDetails.openSelectorOptionsByIndex end selector=" + stri(selectorIndex).trim())
+end sub
+
+sub calculateButtonThumbProperties()
+    ' No-op: kept for compatibility; scrollbar removed in new layout
+end sub
+
+sub onIsInMyListChanged()
+    myListButton = m.top.findNode("mylist-button")
+    if not isValid(myListButton) then return
+
+    if m.top.isInMyList
+        myListButton.text = tr("In My List")
+        myListButton.AUDIO_GUIDE_SUFFIX = tr("In My List")
+        myListButton.iconBlendColor = ColorPalette.RED
+    else
+        myListButton.text = tr("Add To My List")
+        myListButton.AUDIO_GUIDE_SUFFIX = tr("Add To My List")
+        myListButton.iconBlendColor = ColorPalette.WHITE
+    end if
+end sub
+
+sub onMyListLoaded()
+    if not isValid(m.loadItemsTask) then return
+
+    isInMyListData = m.loadItemsTask.content
+    m.loadItemsTask.unobserveField("content")
+    m.loadItemsTask.content = []
+
+    myListButton = m.top.findNode("mylist-button")
+    if not isValid(myListButton) then return
+
+    ' Invalid data returned, remove button to prevent issues
+    if not isValidAndNotEmpty(isInMyListData)
+        if isValid(m.buttonGrp)
+            m.buttonGrp.removeChild(myListButton)
+            m.buttonCount = m.buttonGrp.getChildCount()
+        end if
+        return
+    end if
+
+    m.top.isInMyList = isInMyListData[0]
+end sub
+
+sub removeTelevisionGoToButtons()
+    ' No-op: episode buttons are not added in new layout by default
+end sub
+
+sub onMovieExtrasHasItems()
+    if not isValid(m.movieExtras) then return
+
+    m.movieExtras.unobservefield("hasItems")
+    if m.movieExtras.hasItems then m.movieExtras.visible = true
+end sub
+
+' Called when ButtonGroupHoriz fires escape (UP or DOWN) since it consumes those keys
+sub onButtonGroupEscape()
+    if not isValid(m.buttonGrp) then return
+    escapeDir = m.buttonGrp.escape
+    if escapeDir = "down"
+        if isValid(m.movieExtras) and m.movieExtras.visible and isValid(m.extrasGrid)
+            m.top.lastFocus = m.extrasGrid
+            m.extrasGrid.setFocus(true)
+            showExtrasSlider()
+        end if
+    else if escapeDir = "up"
+        if m.focusRow = 2
+            m.focusRow = 1
+            updateFocus()
+        end if
+    end if
+end sub
+
+sub setButtonColors()
+    ' Focus colors are set per-button in init()
+end sub
+
+' OnScreenShown: Callback function when view is presented on screen
+'
+sub OnScreenShown()
+    m.focusRow = 2
+    m.overviewHighlightEnabled = false
+
+    ' set focus to button group container, not individual buttons
+    if isValid(m.buttonGrp)
+        m.buttonGrp.setFocus(true)
+        group = m.global.sceneManager.callFunc("getActiveScene")
+        group.lastFocus = m.buttonGrp
+        updateFocus()
+    end if
+
+    if m.loadStatus = ViewLoadStatus.RELOAD
+        if isChainValid(m.top.itemContent, "json.mediaStreams")
+            SetDefaultAudioTrack(m.top.itemContent.json)
+            SetUpAudioOptions(m.top.itemContent.json.mediaStreams)
+        end if
+        if isChainValid(m.top.itemContent, "json.mediaSources")
+            SetUpVideoOptions(m.top.itemContent.json.mediaSources)
+        end if
+    end if
+
+    if m.loadStatus = ViewLoadStatus.INIT
+        m.loadStatus = ViewLoadStatus.FIRSTLOAD
+        return
+    end if
+
+    m.loadStatus = ViewLoadStatus.RELOAD
+
+    m.top.refreshMovieDetailsData = not m.top.refreshMovieDetailsData
+end sub
+
+sub trailerAvailableChanged()
+    if not m.top.trailerAvailable
+        trailerBtn = m.top.findNode("trailer-button")
+        if isValid(trailerBtn)
+            m.buttonGrp.removeChild(trailerBtn)
+            m.buttonCount = m.buttonGrp.getChildCount()
+        end if
+    end if
+end sub
+
+sub additionalPartsChanged()
+    partButton = m.top.findNode("part-button")
+    if not isValidAndNotEmpty(m.top.additionalParts)
+        if isValid(partButton)
+            m.buttonGrp.removeChild(partButton)
+            m.buttonCount = m.buttonGrp.getChildCount()
+        end if
+        return
+    end if
+
+    if m.top.additionalParts.parts.TotalRecordCount = 0
+        if isValid(partButton)
+            m.buttonGrp.removeChild(partButton)
+            m.buttonCount = m.buttonGrp.getChildCount()
+        end if
+        return
+    end if
+
+    if isValid(partButton)
+        if isChainValid(m.top.additionalParts, "parts.Items")
+            partButton.text = `${tr("Part")} ${m.top.additionalParts.parts.StartIndex + 1}`
+        end if
+    end if
+end sub
+
+sub onSelectedPartChanged()
+    if not isValid(m.top.selectedPart) then return
+
+    selectedPart = m.top.selectedPart
+    m.global.queueManager.callFunc("setLastKnownItemID", selectedPart.id)
+
+    partButton = m.top.findNode("part-button")
+    partButton.text = selectedPart.track.description
+    partButton.AUDIO_GUIDE_SUFFIX = selectedPart.track.description
+
+    m.loadStatus = ViewLoadStatus.FIRSTLOAD
+
+    m.global.queueManager.callFunc("setLastKnownItemExtraType", string.EMPTY)
+    m.top.refreshMovieDetailsData = not m.top.refreshMovieDetailsData
+end sub
+
+' setBackdropImage: If item has a backdrop image, use it as the background for the view
+'
+' @param {object} itemData - meta data for current item
+sub setBackdropImage(itemData as object)
+    if isValidAndNotEmpty(itemData.BackdropImageTags)
+        imageVersion = ImageType.BACKDROP
+        imageTag = itemData.BackdropImageTags[0]
+    else
+        imageVersion = ImageType.PRIMARY
+        imageTag = itemData.ImageTags.Primary
+    end if
+
+    ' Create a blank background so the user's background image doesn't bleed over
+    movieBackground = m.top.findNode("movieBackground")
+    if not isValid(movieBackground)
+        movieBackground = createObject("roSGNode", "Rectangle")
+    end if
+    movieBackground.id = "movieBackground"
+    movieBackground.width = "1920"
+    movieBackground.height = "1080"
+    movieBackground.color = "#020B2A"
+    if not isValid(m.top.findNode("movieBackdrop"))
+        m.top.insertChild(movieBackground, 0)
+    end if
+
+    movieBackdrop = m.top.findNode("movieBackdrop")
+    if not isValid(movieBackdrop)
+        movieBackdrop = createObject("roSGNode", "Poster")
+    end if
+    movieBackdrop.id = "movieBackdrop"
+    movieBackdrop.loadDisplayMode = "scaleToZoom"
+    movieBackdrop.translation = "[0,0]"
+    movieBackdrop.width = "1920"
+    movieBackdrop.height = "1080"
+    movieBackdrop.opacity = .3
+    movieBackdrop.uri = ImageURL(m.top.id, imageVersion, {
+        "maxWidth": 1920,
+        "Tag": imageTag
+    })
+
+    if not isValid(m.top.findNode("movieBackdrop"))
+        m.top.insertChild(movieBackdrop, 1)
+    end if
+end sub
+
+sub onLogoImageURIChange()
+    ' We have exhaused all methods for getting a logo to display
+    if m.top.logoImageURI = "" and not isChainValid(m.top.itemContent.json, "ImageTags.Logo")
+        return
+    end if
+
+    movieLogo = m.top.findNode("movieLogo")
+    if not isValid(movieLogo)
+        movieLogo = createObject("roSGNode", "Poster")
+    end if
+    movieLogo.id = "movieLogo"
+    movieLogo.loadDisplayMode = "scaleToFit"
+    movieLogo.translation = [100, 25]
+    movieLogo.width = "500"
+    movieLogo.height = "250"
+    movieLogo.uri = m.top.logoImageURI
+
+    if not isValid(m.top.findNode("movieLogo"))
+        m.top.insertChild(movieLogo, 1)
+    end if
+end sub
+
+' setLogoImage: If item has a logo image, add it to the view
+'
+' @param {object} itemData - meta data for current item
+sub setLogoImage(itemData as object)
+    if LCase(itemData.type) = VideoType.EPISODE or LCase(itemData.type) = VideoType.SERIES
+        return
+    end if
+
+    ' No logo found
+    if not isChainValid(itemData, "ImageTags.Logo")
+        addTextMovieTitle()
+        return
+    end if
+
+    movieLogo = m.top.findNode("movieLogo")
+    if not isValid(movieLogo)
+        movieLogo = createObject("roSGNode", "Poster")
+    end if
+    movieLogo.id = "movieLogo"
+    movieLogo.loadDisplayMode = "scaleToFit"
+    movieLogo.translation = [100, 25]
+    movieLogo.width = "500"
+    movieLogo.height = "250"
+    movieLogo.uri = ImageURL(m.top.id, ImageType.LOGO, {
+        "format": "Png",
+        "maxHeight": 300,
+        "maxWidth": 600,
+        "Tag": itemData.ImageTags.Logo
+    })
+
+    if not isValid(m.top.findNode("movieLogo"))
+        m.top.insertChild(movieLogo, 1)
+    end if
+end sub
+
+sub addTextMovieTitle()
+    if not isValid(m.top.findNode("title"))
+        title = createObject("roSGNode", "ScrollingText")
+        title.id = "title"
+        title.font = "font:LargeBoldSystemFont"
+        title.width = 1100
+        title.height = 70
+        m.container.insertChild(title, 0)
+    end if
+end sub
+
+sub itemContentChanged()
+    itemContentTimer = CreateObject("roTimespan")
+    itemContentTimer.Mark()
+    traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged start")
+
+    ' Updates video metadata
+    item = m.top.itemContent
+
+    if m.pendingQueueInit
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged queueManager init start")
+        m.global.queueManager.callFunc("setForceTranscode", PlaybackMethod.PLAYNORMALLY)
+        m.global.queueManager.callFunc("setLastKnownItemID", string.empty)
+        m.pendingQueueInit = false
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged queueManager init end")
+    end if
+
+    ' Reset detail layout position only if extras are currently active.
+    if m.inlineExtrasActive
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged deactivating inline extras layout")
+        deactivateInlineExtrasLayout()
+    else
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged inline extras already inactive")
+    end if
+
+    ' Always start movie details on the buttons row with plot unhighlighted.
+    m.focusRow = 2
+    m.overviewHighlightEnabled = false
+    if isValid(m.buttonGrp)
+        m.top.lastFocus = m.buttonGrp
+        ' DO NOT set selectedButtonIndex here - it will be set after button configuration is complete
+        ' Setting it early triggers onButtonSelectedChange which tries to set focus before buttons are ready
+    end if
+    traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged deferred focus update")
+
+    if isvalid(m.extrasGrid)
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged setting extras ids")
+        m.extrasGrid.seasonID = item.seasonID
+        m.extrasGrid.showID = item.showID
+        m.extrasGrid.episodeID = item.id
+    end if
+
+    if not isChainValid(item, "json")
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged missing item.json")
+        m.buttonGrp.visible = true
+        if isValid(m.buttonGrp)
+            m.buttonGrp.setFocus(true)
+        end if
+        updateFocus()
+        stopLoadingSpinner()
+        return
+    end if
+
+    itemData = item.json
+    m.top.id = itemData.id
+
+    if isValid(m.extrasGrid)
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged loadParts start")
+        m.extrasGrid.callFunc("loadParts", itemData)
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged loadParts end")
+    end if
+
+    title = m.top.findNode("title")
+    if isValid(title) then title.text = itemData.name
+
+    m.loadItemsTask.itemId = m.top.id
+    m.loadItemsTask.control = TaskControl.RUN
+
+    playButton = m.top.findNode("play-button")
+    if isChainValid(itemData, "UserData.PlaybackPositionTicks") and itemData.UserData.PlaybackPositionTicks > 0
+        if isValid(m.resumeButton) and isValid(m.buttonGrp)
+            ' Check if already added
+            firstBtn = m.buttonGrp.getChild(0)
+            if not isValid(firstBtn) or firstBtn.id <> "resume-button"
+                m.buttonGrp.insertChild(m.resumeButton, 0)
+                m.resumeButton.visible = true
+            end if
+
+            ' Update resume text with timestamp
+            resumeTime = ticksToHuman(itemData.UserData.PlaybackPositionTicks)
+            m.resumeButton.text = tr("Resume at %1").Replace("%1", resumeTime)
+        end if
+        if isValid(playButton) then playButton.text = tr("Play from beginning")
+    else
+        if isValid(m.resumeButton) and isValid(m.buttonGrp)
+            firstBtn = m.buttonGrp.getChild(0)
+            if isValid(firstBtn) and firstBtn.id = "resume-button"
+                m.buttonGrp.removeChild(m.resumeButton)
+            end if
+        end if
+        if isValid(playButton) then playButton.text = tr("Play")
+    end if
+
+    if isValid(m.buttonGrp)
+        m.buttonCount = m.buttonGrp.getChildCount()
+        ' Set selected button index after button configuration is complete
+        m.top.selectedButtonIndex = 0
+        updateButtonScrollShift()
+    end if
+    setWatchedColor()
+    setFavoriteColor()
+
+    if not isStringEqual(itemData.Type, VideoType.EPISODE)
+        removeTelevisionGoToButtons()
+    end if
+
+    ' We don't need to update everything if this is a reload
+    ' Unless this is an episode
+    if m.loadStatus = ViewLoadStatus.RELOAD
+        if LCase(itemData.Type) <> VideoType.EPISODE
+            traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged reload short-circuit elapsedMs=" + stri(itemContentTimer.TotalMilliseconds()).trim())
+            updateFocus()
+            return
+        end if
+    end if
+
+    traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged image setup start")
+    setBackdropImage(itemData)
+    setLogoImage(itemData)
+    traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged image setup end")
+
+    if m.moviePoster <> invalid
+        m.moviePoster.uri = ImageURL(m.top.id, ImageType.PRIMARY, {
+            "maxWidth": 340,
+            "maxHeight": 510,
+            "Tag": itemData.ImageTags.Primary
+        })
+    end if
+
+    if m.playedIndicator <> invalid
+        if isChainValid(itemData, "UserData.Played")
+            m.playedIndicator.visible = itemData.UserData.Played
+        end if
+    end if
+
+    ' Set default video source if user hasn't selected one yet
+    if isValid(itemData.MediaSources)
+        if m.top.selectedVideoStreamId = ""
+            m.top.selectedVideoStreamId = itemData.MediaSources[0].id
+        end if
+    end if
+    ' Update Selector Labels and Texts
+    itemData = m.top.itemContent.json
+    videoLabel = m.top.findNode("videoLabel")
+    if isValid(videoLabel)
+        if isValid(itemData.MediaSources) and itemData.MediaSources.Count() > 1
+            videoLabel.text = "Version"
+        else
+            videoLabel.text = "Video"
+        end if
+    end if
+
+    videoButton = m.top.findNode("videoButton")
+    if isValid(videoButton)
+        if isValid(itemData.MediaSources)
+            ' Find the selected source and get its formatted info
+            for each source in itemData.MediaSources
+                if source.id = m.top.selectedVideoStreamId
+                    height = 0
+                    width = 0
+                    codec = ""
+                    videoRange = ""
+                    if isValidAndNotEmpty(source.mediaStreams)
+                        for each stream in source.mediaStreams
+                            if LCase(stream.Type) = "video"
+                                height = chainLookupReturn(stream, "Height", 0)
+                                width = chainLookupReturn(stream, "Width", 0)
+                                codec = chainLookupReturn(stream, "Codec", "")
+                                videoRange = chainLookupReturn(stream, "VideoRangeType", "")
+                                traceStep("MOVIE_TRACE", "MovieDetails itemContentChanged source.id=" + source.id + " height=" + stri(height).trim() + " width=" + stri(width).trim() + " codec=" + codec + " range=" + videoRange)
+                                exit for
+                            end if
+                        end for
+                    end if
+                    resStr = getDisplayResolution(height, width)
+                    codecStr = getDisplayCodec(codec)
+                    rangeStr = getDisplayVideoRange(videoRange)
+                    traceStep("MOVIE_TRACE", "MovieDetails itemContentChanged final button=" + (resStr + " " + codecStr + " " + rangeStr).trim())
+                    videoButton.text = sanitizeSelectorText((resStr + " " + codecStr + " " + rangeStr).trim())
+                    exit for
+                end if
+            end for
+        end if
+    end if
+
+    ' Date Added Label
+    dateAddedLabel = m.top.findNode("dateAdded")
+    if isValid(dateAddedLabel) and isValid(itemData.DateCreated)
+        dateAddedLabel.text = "Date added " + formatAddedDate(itemData.DateCreated)
+    end if
+
+    ' Find first Audio Stream and set that as default
+    SetDefaultAudioTrack(itemData)
+
+    ' Handle all "As Is" fields
+    releaseYearText = normalizeText(chainLookupReturn(itemData, "productionYear", ""))
+    if isValid(m.releaseYearNode) then m.releaseYearNode.text = releaseYearText
+
+    showOverviewSetting = chainLookupReturn(m.global.session, "user.settings.ui.itemdetail.showoverviewcontent", true)
+    m.hasOverviewContent = showOverviewSetting and isValidAndNotEmpty(itemData.overview)
+
+    if m.hasOverviewContent
+        setFieldText("overview", itemData.overview)
+    else
+        setFieldText("overview", "")
+    end if
+
+    if isValid(m.overviewGroup) and not m.inlineExtrasActive
+        m.overviewGroup.visible = m.hasOverviewContent
+    end if
+
+    officialRatingText = normalizeText(chainLookupReturn(itemData, "officialRating", ""))
+    if isValid(m.officialRatingNode)
+        if officialRatingText <> ""
+            m.officialRatingNode.visible = true
+            m.officialRatingNode.text = officialRatingText
+        else
+            m.officialRatingNode.visible = false
+            m.officialRatingNode.text = ""
+        end if
+    end if
+
+    criticRatingIcon = m.top.findNode("criticRatingIcon")
+    starNode = m.top.findNode("star")
+    showCommunityRating = false
+    showCriticRating = false
+
+    if m.global.session.user.settings["ui.itemdetail.showRatings"]
+        if isValid(itemData.communityRating)
+            if isValid(starNode) then starNode.visible = true
+            setFieldText("communityRating", int(itemData.communityRating * 10) / 10)
+            showCommunityRating = true
+        else
+            if isValid(starNode) then starNode.visible = false
+            setFieldText("communityRating", "")
+        end if
+
+        if isValid(criticRatingIcon)
+            if isValid(itemData.CriticRating)
+                setFieldText("criticRatingLabel", stri(int(itemData.CriticRating)) + "%")
+                if itemData.CriticRating > 60
+                    tomato = "pkg:/images/fresh.png"
+                else
+                    tomato = "pkg:/images/rotten.png"
+                end if
+                criticRatingIcon.uri = tomato
+                showCriticRating = true
+            else
+                criticRatingIcon.uri = ""
+                setFieldText("criticRatingLabel", "")
+            end if
+        end if
+    else
+        if isValid(criticRatingIcon) then criticRatingIcon.uri = ""
+        setFieldText("criticRatingLabel", "")
+        setFieldText("communityRating", "")
+        if isValid(starNode) then starNode.visible = false
+    end if
+
+    if isValid(m.communityRatingGroup) then m.communityRatingGroup.visible = showCommunityRating
+    if isValid(m.criticRatingGroup) then m.criticRatingGroup.visible = showCriticRating
+
+    runtimeText = ""
+    endsAtText = ""
+    if type(itemData.RunTimeTicks) = "LongInteger" or type(itemData.RunTimeTicks) = "Integer"
+        runtimeText = formatRuntimeLabel(itemData.RunTimeTicks)
+        if isValid(m.runtimeNode) then m.runtimeNode.text = runtimeText
+        endsAtText = tr("Ends at %1").Replace("%1", getEndTime())
+    else
+        if isValid(m.runtimeNode) then m.runtimeNode.text = ""
+    end if
+
+    itemType = LCase(chainLookupReturn(itemData, "Type", ""))
+
+    airedText = ""
+
+    'set aired date if type is Episode
+    if itemType = VideoType.EPISODE
+        if isValid(itemData.PremiereDate)
+            airDate = CreateObject("roDateTime")
+            airDate.FromISO8601String(itemData.PremiereDate)
+            airedText = tr("Aired") + ": " + airDate.AsDateString("short-month-no-weekday")
+        end if
+
+        addEpisodeTitle(itemData)
+    end if
+
+    genresText = ""
+    if isValidAndNotEmpty(itemData.genres)
+        genresText = sanitizeSelectorText(itemData.genres.join(" / "))
+    end if
+
+    metaRow2Parts = []
+    if airedText <> ""
+        metaRow2Parts.push(sanitizeSelectorText(airedText))
+    else
+        if releaseYearText <> "" then metaRow2Parts.push(sanitizeSelectorText(releaseYearText))
+        if runtimeText <> "" then metaRow2Parts.push(sanitizeSelectorText(runtimeText))
+        if genresText <> "" then metaRow2Parts.push(genresText)
+        if endsAtText <> "" then metaRow2Parts.push(sanitizeSelectorText(endsAtText))
+    end if
+    setFieldText("metaRow2Text", metaRow2Parts.join(" | "))
+
+    SetUpVideoOptions(itemData.mediaSources)
+    SetUpAudioOptions(itemData.mediaStreams)
+    traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged stream options setup done")
+
+    if isValid(m.streamSelectorRow) then m.streamSelectorRow.visible = true
+    if isValid(m.dateAddedLabel) then m.dateAddedLabel.visible = true
+    m.buttonGrp.visible = true
+    traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged controls visible")
+
+    stopLoadingSpinner()
+    traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged spinner stopped")
+
+    sceneRef = m.top.getScene()
+    if isValid(sceneRef)
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged scene lock state isLoading=" + debugBool(sceneRef.isLoading) + " disableRemote=" + debugBool(sceneRef.disableRemote))
+    else
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged scene lock state scene invalid")
+    end if
+
+    if isValid(m.buttonGrp)
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged focus handoff start")
+        if m.useParentKeyHandling
+            m.top.setFocus(true)
+            m.top.lastFocus = m.top
+        else
+            m.buttonGrp.setFocus(true)
+            m.top.lastFocus = m.buttonGrp
+        end if
+        traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged focus handoff end")
+    end if
+
+    ' Re-apply row visuals once metadata and controls are fully bound.
+    m.focusRow = 2
+    ensureValidSelectedButtonIndex()
+    updateFocus()
+    traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged deferred full focus sync")
+
+    traceStep("MOVIE_TRACE", "MovieDetails.itemContentChanged end elapsedMs=" + stri(itemContentTimer.TotalMilliseconds()).trim())
+end sub
+
+sub addEpisodeTitle(itemData as object)
+    episodeTitle = m.top.findNode("episodeTitle")
+
+    if not isValid(episodeTitle)
+        episodeTitle = createObject("roSGNode", "Text")
+        episodeTitle.id = "episodeTitle"
+        episodeTitle.font = "font:MediumBoldSystemFont"
+    end if
+
+    titleText = ""
+    if isAllValid([itemData.ParentIndexNumber, itemData.IndexNumber])
+        titleText = `${tr("Season")} ${itemData.ParentIndexNumber} ${tr("Episode")} ${itemData.IndexNumber}`
+    end if
+
+    if isValid(itemData.LookupCI("indexNumberEnd"))
+        titleText += `-${itemData.LookupCI("indexNumberEnd")}`
+    end if
+
+    if isValid(itemData.name)
+        if titleText <> "" then titleText += " | "
+        titleText += itemData.name
+    end if
+
+    episodeTitle.text = titleText
+
+    if not isValid(m.top.findNode("episodeTitle"))
+        m.container.insertChild(episodeTitle, 0)
+    end if
+end sub
+
+sub SetUpVideoOptions(streams)
+    if not isValid(streams) then return
+
+    videos = []
+    codecDetailsSet = false
+
+    setFieldText("rotationWarning", string.EMPTY)
+
+    for i = 0 to streams.Count() - 1
+        if LCase(streams[i].VideoType) = VideoType.VIDEOFILE
+            videoCodecForDisplay = ""
+            codec = ""
+            if isValidAndNotEmpty(streams[i].mediaStreams)
+
+                ' find the first (default) video track to get the codec for the details screen
+
+                for index = 0 to streams[i].mediaStreams.Count() - 1
+                    if LCase(streams[i].mediaStreams[index].Type) = MediaStreamType.VIDEO
+                        if m.performRotationCheck
+                            rotation = chainLookupReturn(streams[i].mediaStreams[index], "rotation", 0)
+                            if rotation <> 0
+                                setFieldText("rotationWarning", tr("Note: Force transcode option automatically enabled due to video rotation"))
+                                m.global.queueManager.callFunc("setForceTranscode", PlaybackMethod.FORCETRANSCODEALLOWREMUX)
+                            end if
+                        end if
+
+                        if not codecDetailsSet
+                            setFieldText("video_codec", tr("Video") + ": " + streams[i].mediaStreams[index].displayTitle)
+                            codecDetailsSet = true
+                        end if
+                        exit for
+                    end if
+                end for
+
+                videoCodecForDisplay = streams[i].mediaStreams[0].displayTitle
+                codec = streams[i].mediaStreams[0].Codec
+            end if
+
+            ' Create options for user to switch between video tracks
+            height = 0
+            width = 0
+            videoRange = ""
+            if isValidAndNotEmpty(streams[i].mediaStreams)
+                for each stream in streams[i].mediaStreams
+                    if LCase(stream.Type) = "video"
+                        height = chainLookupReturn(stream, "Height", 0)
+                        width = chainLookupReturn(stream, "Width", 0)
+                        videoRange = chainLookupReturn(stream, "VideoRangeType", "")
+                        traceStep("MOVIE_TRACE", "MovieDetails SetUpVideoOptions source=" + stri(i).trim() + " height=" + stri(height).trim() + " width=" + stri(width).trim() + " range=" + videoRange)
+                        exit for
+                    end if
+                end for
+            end if
+
+            resStr = getDisplayResolution(height, width)
+            codecStr = getDisplayCodec(codec)
+            rangeStr = getDisplayVideoRange(videoRange)
+            title = (resStr + " " + codecStr + " " + rangeStr).trim()
+            fileName = getFileName(streams[i].Path)
+
+            videos.push({
+                "Title": title,
+                "Description": fileName,
+                "Selected": m.top.selectedVideoStreamId = streams[i].id,
+                "StreamID": streams[i].id,
+                "video_codec": videoCodecForDisplay,
+                "codec": codec
+            })
+        end if
+    end for
+
+    codecCountNode = m.top.findnode("video_codec_count")
+    if isValid(codecCountNode)
+        if streams.count() > 1
+            codecCountNode.text = "+" + stri(streams.Count() - 1).trim()
+        else
+            codecCountNode.text = ""
+        end if
+    end if
+
+    options = {}
+    options.videos = videos
+    m.options.options = options
+end sub
+
+sub SetUpAudioOptions(streams)
+    if not isValid(streams) then return
+
+    preferredSubtitle = m.global.queueManager.callFunc("getPreferredSubtitleTrack")
+    selectedSubtitle = isChainValid(preferredSubtitle, "StreamIndex") ? preferredSubtitle.StreamIndex : SubtitleSelection.NONE
+
+    audioTracks = []
+    subtitleTracks = [{
+        "StreamIndex": SubtitleSelection.NONE,
+        "json": {},
+        "Title": "None",
+        "Description": "None",
+        "Selected": selectedSubtitle = SubtitleSelection.NONE
+    }]
+
+    audioStreamCount = 1
+    for i = 0 to streams.Count() - 1
+        if streams[i].Type = "Audio"
+            rokuTrackName = `#uniq:${streams[i].LookupCI("Title") ?? string.EMPTY}(${audioStreamCount})`
+
+            audioTracks.push({ "Title": sanitizeSelectorText(streams[i].displayTitle), "Description": sanitizeSelectorText(streams[i].Title), "Selected": m.top.selectedAudioStreamIndex = i, "StreamIndex": i, "RokuTrackName": rokuTrackName })
+            if m.top.selectedAudioStreamIndex = i
+                setFieldText("audio_codec", tr("Audio") + ": " + streams[i].displayTitle)
+            end if
+            audioStreamCount++
+        end if
+        if streams[i].Type = "Subtitle"
+            subtitleTracks.push({ "Title": sanitizeSelectorText(streams[i].displayTitle), "json": streams[i], "Description": sanitizeSelectorText(streams[i].Title), "Selected": selectedSubtitle = streams[i].index, "StreamIndex": i })
+        end if
+    end for
+
+    audioCountNode = m.top.findnode("audio_codec_count")
+    if isValid(audioCountNode)
+        if audioTracks.count() > 1
+            audioCountNode.text = "+" + stri(audioTracks.Count() - 1).trim()
+        else
+            audioCountNode.text = ""
+        end if
+    end if
+
+    options = {}
+    if isValid(m.options.options.videos)
+        options.videos = m.options.options.videos
+    end if
+    options.audios = audioTracks
+    options.subtitles = subtitleTracks
+    m.options.options = options
+
+    ' Update labels on main screen
+    audioButton = m.top.findNode("audioButton")
+    if isValid(audioButton) and m.top.selectedAudioStreamIndex >= 0 and m.top.selectedAudioStreamIndex < streams.Count()
+        audioButton.text = buildAudioLabel(streams[m.top.selectedAudioStreamIndex])
+    end if
+
+    subtitleButton = m.top.findNode("subtitleButton")
+    prefSub = m.global.queueManager.callFunc("getPreferredSubtitleTrack")
+    if isValid(subtitleButton)
+        if isChainValid(prefSub, "StreamIndex")
+            for each track in subtitleTracks
+                if track.StreamIndex = prefSub.StreamIndex
+                    subtitleButton.text = sanitizeSelectorText(track.Title)
+                    exit for
+                end if
+            end for
+        else
+            subtitleButton.text = sanitizeSelectorText(tr("None"))
+        end if
+    end if
+end sub
+
+sub SetDefaultAudioTrack(itemData)
+    preferredAudioTrackIndex = m.global.queueManager.callFunc("getPreferredAudioTrackIndex")
+    preferredAudioTrackName = m.global.queueManager.callFunc("getPreferredAudioTrackName")
+    preferredLanguage = m.global.session.user.Configuration.AudioLanguagePreference
+    firstAudioTrack = -1
+
+    defaultAudioTrackIndex = getDefaultAudioTrackIndex(itemData.mediaStreams)
+    defaultAudioTrackName = string.EMPTY
+
+    ' If user has not selected an audio track and PlayDefaultAudioTrack setting is enabled, find the default track
+    if preferredAudioTrackIndex < 0 and chainLookupReturn(m.global.session, "user.Configuration.PlayDefaultAudioTrack", false)
+        preferredAudioTrackIndex = defaultAudioTrackIndex
+    end if
+
+    audioStreamCount = 1
+    for i = 0 to itemData.mediaStreams.Count() - 1
+        if itemData.mediaStreams[i].Type = "Audio"
+            rokuTrackName = `#uniq:${itemData.mediaStreams[i].LookupCI("Title") ?? string.EMPTY}(${audioStreamCount})`
+
+            if firstAudioTrack < 0 then firstAudioTrack = i
+
+            if i = defaultAudioTrackIndex then defaultAudioTrackName = rokuTrackName
+
+            if i = preferredAudioTrackIndex
+                m.global.queueManager.callFunc("setPreferredAudioTrackName", rokuTrackName)
+                preferredAudioTrackName = rokuTrackName
+            end if
+
+            ' No user selection and not configured to play the default, how about a preferred language?
+            if preferredAudioTrackIndex < 0 and isValid(preferredLanguage)
+                if isStringEqual(chainLookupReturn(itemData.mediaStreams[i], "Language", invalid), preferredLanguage)
+                    m.top.selectedAudioStreamIndex = i
+                    m.global.queueManager.callFunc("setPreferredAudioTrackName", rokuTrackName)
+                    setFieldText("audio_codec", tr("Audio") + ": " + itemData.mediaStreams[i].displayTitle)
+                    return
+                end if
+            end if
+
+            if isStringEqual(rokuTrackName, preferredAudioTrackName)
+                m.top.selectedAudioStreamIndex = i
+                setFieldText("audio_codec", tr("Audio") + ": " + itemData.mediaStreams[i].displayTitle)
+                return
+            end if
+
+            audioStreamCount++
+        end if
+    end for
+
+    if defaultAudioTrackIndex > -1
+        m.top.selectedAudioStreamIndex = defaultAudioTrackIndex
+        m.global.queueManager.callFunc("setPreferredAudioTrackName", defaultAudioTrackName)
+        setFieldText("audio_codec", tr("Audio") + ": " + itemData.mediaStreams[defaultAudioTrackIndex].displayTitle)
+        return
+    end if
+
+    ' If we got here, then nothing matched.  First track it is...
+    if firstAudioTrack > -1
+        m.top.selectedAudioStreamIndex = firstAudioTrack
+        setFieldText("audio_codec", tr("Audio") + ": " + itemData.mediaStreams[firstAudioTrack].displayTitle)
+    end if
+end sub
+
+sub setFieldText(field, value)
+    node = m.top.findNode(field)
+    if not isAllValid([node, value]) then return
+
+    ' Handle non strings... Which _shouldn't_ happen, but hey
+    if type(value) = "roInt" or type(value) = "Integer"
+        value = str(value)
+    else if type(value) = "roFloat" or type(value) = "Float"
+        value = str(value)
+    else if type(value) <> "roString" and type(value) <> "String"
+        value = ""
+    end if
+
+    node.text = value
+end sub
+
+sub rebuildInfoGroup(showCommunity as boolean, showCritic as boolean, showYear as boolean, showRuntime as boolean, showOfficial as boolean)
+    if not isValid(m.infoGroup) then return
+
+    while m.infoGroup.getChildCount() > 0
+        m.infoGroup.removeChild(m.infoGroup.getChild(0))
+    end while
+
+    if showCommunity and isValid(m.communityRatingGroup)
+        m.infoGroup.appendChild(m.communityRatingGroup)
+    end if
+
+    if showCritic and isValid(m.criticRatingGroup)
+        m.infoGroup.appendChild(m.criticRatingGroup)
+    end if
+
+    if showYear and isValid(m.releaseYearNode)
+        m.infoGroup.appendChild(m.releaseYearNode)
+    end if
+
+    if showRuntime and isValid(m.runtimeNode)
+        m.infoGroup.appendChild(m.runtimeNode)
+    end if
+
+    if showOfficial and isValid(m.officialRatingNode)
+        m.infoGroup.appendChild(m.officialRatingNode)
+    end if
+end sub
+
+function getRuntime() as integer
+
+    itemData = m.top.itemContent.json
+
+    ' A tick is .1ms, so 1/10,000,000 for ticks to seconds,
+    ' then 1/60 for seconds to minutess... 1/600,000,000
+    return round(itemData.RunTimeTicks / 600000000.0)
+end function
+
+function getEndTime() as string
+    itemData = m.top.itemContent.json
+
+    date = CreateObject("roDateTime")
+    duration_s = int(itemData.RunTimeTicks / 10000000.0)
+    date.fromSeconds(date.asSeconds() + duration_s)
+    date.toLocalTime()
+
+    return formatTime(date).trim()
+end function
+
+sub setFavoriteColor()
+    fave = m.top.itemContent.favorite
+    fave_button = m.top.findNode("favorite-button")
+    if not isValid(fave_button) then return
+    if isValid(fave) and fave
+        fave_button.iconBlendColor = ColorPalette.RED
+        fave_button.text = tr("Favorited")
+    else
+        fave_button.iconBlendColor = ColorPalette.WHITE
+        fave_button.text = tr("Favorite")
+    end if
+end sub
+
+sub setWatchedColor()
+    watched = m.top.itemContent.watched
+    watched_button = m.top.findNode("watched-button")
+    if not isValid(watched_button) then return
+    if watched
+        watched_button.iconBlendColor = "#00A4DC"
+        watched_button.text = tr("Played")
+    else
+        watched_button.iconBlendColor = ColorPalette.WHITE
+        watched_button.text = tr("Played")
+    end if
+end sub
+
+function round(f as float) as integer
+    ' BrightScript only has a "floor" round
+    ' This compares floor to floor + 1 to find which is closer
+    m = int(f)
+    n = m + 1
+    x = abs(f - m)
+    y = abs(f - n)
+    if y > x
+        return m
+    else
+        return n
+    end if
+end function
+
+'
+'Check if options updated and any reloading required
+sub audioOptionsClosed()
+    if m.options.audioStreamIndex <> m.top.selectedAudioStreamIndex
+        m.top.selectedAudioStreamIndex = m.options.audioStreamIndex
+        m.global.queueManager.callFunc("setPreferredAudioTrackIndex", m.options.audioStreamIndex)
+        m.global.queueManager.callFunc("setPreferredAudioTrackName", m.options.audioStreamName)
+        setFieldText("audio_codec", tr("Audio") + ": " + m.top.itemContent.json.mediaStreams[m.top.selectedAudioStreamIndex].displayTitle)
+
+        audioButton = m.top.findNode("audioButton")
+        if isValid(audioButton)
+            audioButton.text = buildAudioLabel(m.top.itemContent.json.mediaStreams[m.top.selectedAudioStreamIndex])
+        end if
+    end if
+
+    ' Update Subtitle button text
+    subtitleButton = m.top.findNode("subtitleButton")
+    if isValid(subtitleButton)
+        if isValid(m.options.subtitleStream)
+            subtitleButton.text = sanitizeSelectorText(m.options.subtitleStream.title)
+        else
+            subtitleButton.text = sanitizeSelectorText(tr("None"))
+        end if
+    end if
+
+    m.focusRow = 2
+    m.buttonGrp.setFocus(true)
+    updateFocus()
+    group = m.global.sceneManager.callFunc("getActiveScene")
+    group.lastFocus = m.buttonGrp
+end sub
+
+'
+' Check if options were updated and if any reloding is needed...
+sub videoOptionsClosed()
+        if m.options.videoStreamId <> m.top.selectedVideoStreamId
+            m.top.selectedVideoStreamId = m.options.videoStreamId
+
+            videoButton = m.top.findNode("videoButton")
+            itemData = m.top.itemContent.json
+            if isValid(videoButton) and isValid(itemData.MediaSources)
+                for each source in itemData.MediaSources
+                    if source.id = m.top.selectedVideoStreamId
+                        height = 0
+                        width = 0
+                        codec = ""
+                        videoRange = ""
+                        displayTitle = ""
+                        if isValidAndNotEmpty(source.mediaStreams)
+                            for each stream in source.mediaStreams
+                                if LCase(stream.Type) = "video"
+                                    height = chainLookupReturn(stream, "Height", 0)
+                                    width = chainLookupReturn(stream, "Width", 0)
+                                    codec = chainLookupReturn(stream, "Codec", "")
+                                    videoRange = chainLookupReturn(stream, "VideoRangeType", "")
+                                    displayTitle = chainLookupReturn(stream, "displayTitle", "")
+                                    traceStep("MOVIE_TRACE", "MovieDetails videoOptionsClosed source.id=" + source.id + " height=" + stri(height).trim() + " width=" + stri(width).trim() + " codec=" + codec + " range=" + videoRange)
+                                    exit for
+                                end if
+                            end for
+                        end if
+                        if displayTitle <> ""
+                            setFieldText("video_codec", tr("Video") + ": " + displayTitle)
+                        end if
+                        resStr = getDisplayResolution(height, width)
+                        codecStr = getDisplayCodec(codec)
+                        rangeStr = getDisplayVideoRange(videoRange)
+                        videoButton.text = sanitizeSelectorText((resStr + " " + codecStr + " " + rangeStr).trim())
+                        exit for
+                    end if
+                end for
+            end if
+        ' Because the video stream has changed (i.e. the actual video)... we need to reload the audio stream choices for that video
+        m.top.unobservefield("itemContent")
+        itemData = m.top.itemContent.json
+        for each mediaSource in itemData.mediaSources
+            if mediaSource.id = m.top.selectedVideoStreamId
+                itemData.mediaStreams = []
+                for i = 0 to mediaSource.mediaStreams.Count() - 1
+                    itemData.mediaStreams.push(mediaSource.mediaStreams[i])
+                end for
+                SetDefaultAudioTrack(itemData)
+                SetUpAudioOptions(itemData.mediaStreams)
+                exit for
+            end if
+        end for
+        m.top.itemContent.json = itemData
+        m.top.observeField("itemContent", "itemContentChanged")
+    end if
+    m.focusRow = 2
+    m.buttonGrp.setFocus(true)
+    updateFocus()
+
+    ' If user manually disables force transcode, disable rotation check
+    m.performRotationCheck = not isStringEqual(m.global.queueManager.callFunc("getForceTranscode"), PlaybackMethod.PLAYNORMALLY)
+    if not m.performRotationCheck
+        setFieldText("rotationWarning", string.EMPTY)
+    end if
+end sub
+
+
+sub showExtrasSlider()
+    if isValid(m.extrasGrid)
+        m.extrasGrid.jumpToRowItem = [0, 0]
+    end if
+    m.inlineExtrasActive = true
+    m.overviewHighlightEnabled = false
+    ' Clear overview highlight without calling updateFocus() (which would steal focus to buttonGrp)
+    if isValid(m.overviewBackground) then m.overviewBackground.color = "0x00000000"
+    if isValid(m.overviewBorder)
+        m.overviewBorder.lineColor = "0x00000000"
+        m.overviewBorder.lineWidth = 0
+    end if
+    if isValid(m.overviewText) then m.overviewText.color = "#f2f2f2ff"
+    ' Slide title strip to top of screen, hide detail rows and action controls
+    setInlineHeaderPreviewEnabled(true)
+    setPrimaryControlRowsVisible(false)
+    updateInlineDetailsAnimationTarget()
+    if isValid(m.detailsSlideAnime) then m.detailsSlideAnime.control = AnimationControl.START
+    vertSlider = m.top.findNode("VertSlider")
+    extrasFader = m.top.findNode("extrasFader")
+    pplAnime = m.top.findNode("pplAnime")
+    if isValid(vertSlider) then vertSlider.reverse = false
+    if isValid(extrasFader) then extrasFader.reverse = false
+    if isValid(pplAnime) then pplAnime.control = AnimationControl.START
+end sub
+
+sub hideExtrasSlider()
+    ' Animate title strip back to its normal position and restore detail rows
+    m.inlineExtrasClosing = true
+    updateInlineDetailsRestoreTarget()
+    if isValid(m.detailsSlideAnime) then m.detailsSlideAnime.control = AnimationControl.START
+    vertSlider = m.top.findNode("VertSlider")
+    extrasFader = m.top.findNode("extrasFader")
+    pplAnime = m.top.findNode("pplAnime")
+    if isValid(vertSlider) then vertSlider.reverse = true
+    if isValid(extrasFader) then extrasFader.reverse = true
+    if isValid(pplAnime) then pplAnime.control = AnimationControl.START
+    m.inlineExtrasActive = false
+end sub
+
+sub onExtrasTargetTranslationYChanged()
+    ' No-op: gridAnime removed; RowList handles own scrolling
+end sub
+
+sub activateInlineExtrasLayout()
+    if m.inlineExtrasActive then return
+    m.inlineExtrasActive = true
+end sub
+
+sub deactivateInlineExtrasLayout()
+    if isValid(m.detailsSlideAnime)
+        m.detailsSlideAnime.control = "stop"
+    end if
+
+    if isValid(m.container)
+        m.container.translation = [m.defaultContainerTranslation[0], m.defaultContainerTranslation[1]]
+    end if
+    if isValid(m.streamSelectorRow)
+        m.streamSelectorRow.translation = [m.defaultSelectorRowTranslation[0], m.defaultSelectorRowTranslation[1]]
+    end if
+    if isValid(m.actionButtonsRow)
+        m.actionButtonsRow.translation = [m.defaultButtonGroupTranslation[0], m.defaultButtonGroupTranslation[1]]
+    end if
+    if isValid(m.dateAddedLabel)
+        m.dateAddedLabel.translation = [m.defaultDateAddedTranslation[0], m.defaultDateAddedTranslation[1]]
+    end if
+
+    setPrimaryControlRowsVisible(true)
+    setInlineHeaderPreviewEnabled(false)
+
+    m.inlineExtrasActive = false
+    m.extrasNavigationActive = false
+end sub
+
+sub setPrimaryControlRowsVisible(isVisible as boolean)
+    if isValid(m.streamSelectorRow)
+        m.streamSelectorRow.visible = isVisible
+    end if
+
+    if isValid(m.buttonGrp)
+        m.buttonGrp.visible = isVisible
+    end if
+
+    if isValid(m.dateAddedLabel)
+        m.dateAddedLabel.visible = isVisible
+    end if
+end sub
+
+sub setInlineHeaderPreviewEnabled(isPreviewEnabled as boolean)
+    if isValid(m.extrasHeaderStrip)
+        m.extrasHeaderStrip.visible = isPreviewEnabled
+    end if
+
+    if isValid(m.titleNode)
+        if isPreviewEnabled
+            m.titleNode.maxLines = 1
+        else
+            m.titleNode.maxLines = m.defaultTitleMaxLines
+        end if
+    end if
+
+    if isValid(m.infoGroup)
+        m.infoGroup.visible = not isPreviewEnabled
+    end if
+
+    if isValid(m.overviewGroup)
+        if isPreviewEnabled
+            m.overviewGroup.visible = false
+        else
+            m.overviewGroup.visible = m.hasOverviewContent
+        end if
+    end if
+
+    if isValid(m.metaRow2Node)
+        if isPreviewEnabled
+            m.metaRow2Node.visible = false
+        else
+            m.metaRow2Node.visible = isValidAndNotEmpty(m.metaRow2Node.text)
+        end if
+    end if
+
+    if isValid(m.tagsTextNode)
+        if isPreviewEnabled
+            m.tagsTextNode.visible = false
+        else
+            m.tagsTextNode.visible = isValidAndNotEmpty(m.tagsTextNode.text)
+        end if
+    end if
+
+    movieLogo = m.top.findNode("movieLogo")
+    if isValid(movieLogo)
+        movieLogo.visible = not isPreviewEnabled
+    end if
+end sub
+
+sub updateInlineDetailsAnimationTarget()
+    setDetailsSlideAbsoluteTarget(m.detailsContainerSlider, m.container, m.defaultContainerTranslation[0], m.inlineTitleTopY)
+    setDetailsSlideAbsoluteTarget(m.selectorRowSlider, m.streamSelectorRow, m.defaultSelectorRowTranslation[0], -180)
+    setDetailsSlideAbsoluteTarget(m.buttonRowSlider, m.buttonGrp, m.defaultButtonGroupTranslation[0], -100)
+    setDetailsSlideAbsoluteTarget(m.dateAddedSlider, m.dateAddedLabel, m.defaultDateAddedTranslation[0], -120)
+end sub
+
+sub setDetailsSlideTarget(interpolator as object, node as object, deltaY as float)
+    if not isValid(interpolator) or not isValid(node) then return
+
+    currentX = node.translation[0]
+    currentY = node.translation[1]
+    interpolator.keyValue = [[currentX, currentY], [currentX, currentY + deltaY]]
+end sub
+
+sub setDetailsSlideAbsoluteTarget(interpolator as object, node as object, targetX as float, targetY as float)
+    if not isValid(interpolator) or not isValid(node) then return
+
+    currentX = node.translation[0]
+    currentY = node.translation[1]
+    interpolator.keyValue = [[currentX, currentY], [targetX, targetY]]
+end sub
+
+sub updateInlineDetailsRestoreTarget()
+    setDetailsSlideAbsoluteTarget(m.detailsContainerSlider, m.container, m.defaultContainerTranslation[0], m.defaultContainerTranslation[1])
+    setDetailsSlideAbsoluteTarget(m.selectorRowSlider, m.streamSelectorRow, m.defaultSelectorRowTranslation[0], m.defaultSelectorRowTranslation[1])
+    setDetailsSlideAbsoluteTarget(m.buttonRowSlider, m.buttonGrp, m.defaultButtonGroupTranslation[0], m.defaultButtonGroupTranslation[1])
+    setDetailsSlideAbsoluteTarget(m.dateAddedSlider, m.dateAddedLabel, m.defaultDateAddedTranslation[0], m.defaultDateAddedTranslation[1])
+end sub
+
+function isExtrasTopRowFocused() as boolean
+    if not isValid(m.extrasGrid) then return false
+
+    if isValid(m.extrasGrid.rowItemFocused) and m.extrasGrid.rowItemFocused.Count() > 0
+        return m.extrasGrid.rowItemFocused[0] = 0
+    end if
+
+    return m.extrasGrid.itemFocused = 0
+end function
+
+sub onDetailsSlideAnimeStateChanged()
+    if not m.inlineExtrasClosing then return
+    if not isValid(m.detailsSlideAnime) then return
+    if not isStringEqual(m.detailsSlideAnime.state, AnimationState.STOPPED) then return
+
+    deactivateInlineExtrasLayout()
+    m.inlineExtrasClosing = false
+end sub
+
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+
+    if key = KeyCode.UP
+        if m.extrasGrid.isInFocusChain()
+            if isExtrasTopRowFocused()
+                hideExtrasSlider()
+                m.focusRow = 2
+                m.buttonGrp.setFocus(true)
+                updateFocus()
+                return true
+            end if
+        else if m.focusRow = 2
+            m.focusRow = 1
+            updateFocus()
+            return true
+        else if m.focusRow = 1
+            m.focusRow = 0
+            m.overviewHighlightEnabled = true
+            updateFocus()
+            return true
+        end if
+        return false
+    end if
+
+    if key = KeyCode.DOWN
+        if m.focusRow = 0
+            m.focusRow = 1
+            updateFocus()
+            return true
+        else if m.focusRow = 1
+            m.focusRow = 2
+            updateFocus()
+            return true
+        else if m.focusRow = 2
+            if isValid(m.movieExtras) and m.movieExtras.visible and isValid(m.extrasGrid)
+                m.top.lastFocus = m.extrasGrid
+                m.extrasGrid.setFocus(true)
+                showExtrasSlider()
+                return true
+            end if
+            return false
+        end if
+        return false
+    end if
+
+    if key = KeyCode.LEFT
+        if m.focusRow = 1
+            m.selectedSelectorIndex = getCurrentSelectorIndex()
+            if m.selectedSelectorIndex > 0
+                m.selectedSelectorIndex--
+                updateFocus()
+            end if
+            return true
+        else if m.focusRow = 2
+            if m.top.selectedButtonIndex > 0
+                m.top.selectedButtonIndex--
+            end if
+            return true
+        end if
+    end if
+
+    if key = KeyCode.RIGHT
+        if m.focusRow = 1
+            m.selectedSelectorIndex = getCurrentSelectorIndex()
+            if m.selectedSelectorIndex < m.selectorNodes.Count() - 1
+                m.selectedSelectorIndex++
+                updateFocus()
+            end if
+            return true
+        else if m.focusRow = 2
+            if m.top.selectedButtonIndex < m.buttonCount - 1
+                m.previouslySelectedButtonIndex = m.top.selectedButtonIndex
+                m.top.selectedButtonIndex++
+            end if
+            return true
+        end if
+    end if
+
+    if key = KeyCode.OK
+        if m.extrasGrid.isInFocusChain() then return false
+        if m.focusRow = 0
+            createFullOverviewDialog()
+            return true
+        else if m.focusRow = 1
+            m.selectedSelectorIndex = getCurrentSelectorIndex()
+            openSelectorOptionsByIndex(m.selectedSelectorIndex)
+            return true
+        else if m.focusRow = 2
+            focusedBtn = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+            if not isValid(focusedBtn) then return true
+
+            btnId = focusedBtn.id
+            if btnId = "delete-button"
+                confirmDeleteItem()
+                return true
+            end if
+            if btnId = "options-button" and isValid(m.options)
+                m.options.visible = true
+                m.options.setFocus(true)
+                return true
+            end if
+            if btnId = "refresh-button"
+                m.top.refreshMovieDetailsData = true
+                return true
+            end if
+            if btnId = "info-button"
+                showFileNameInfo()
+                return true
+            end if
+            m.top.buttonSelected = btnId
+            return true
+        end if
+    end if
+
+    if key = KeyCode.BACK
+        if isValid(m.options) and m.options.visible = true
+            m.options.visible = false
+            videoOptionsClosed()
+            audioOptionsClosed()
+            updateFocus()
+            return true
+        end if
+
+        if isValid(m.extrasGrid) and m.extrasGrid.isInFocusChain()
+            if isValid(m.buttonGrp)
+                m.top.lastFocus = m.buttonGrp
+                hideExtrasSlider()
+                m.buttonGrp.setFocus(true)
+                m.focusRow = 2
+                updateFocus()
+            end if
+            return true
+        end if
+
+        return false
+    end if
+
+    if key = KeyCode.PLAY
+        if m.focusRow = 2 and not m.extrasGrid.isInFocusChain()
+            focusedBtn = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+            if not isValid(focusedBtn) then return true
+
+            btnId = focusedBtn.id
+            traceStep("MOVIE_TRACE", "MovieDetails.onKeyEvent PLAY row=" + stri(m.focusRow).trim() + " index=" + stri(m.top.selectedButtonIndex).trim() + " btnId=" + btnId)
+            if btnId = "delete-button"
+                confirmDeleteItem()
+                return true
+            end if
+            if btnId = "options-button" and isValid(m.options)
+                m.options.visible = true
+                m.options.setFocus(true)
+                return true
+            end if
+            if btnId = "refresh-button"
+                m.top.refreshMovieDetailsData = true
+                return true
+            end if
+            if btnId = "info-button"
+                showFileNameInfo()
+                return true
+            end if
+            m.top.buttonSelected = btnId
+            traceStep("MOVIE_TRACE", "MovieDetails.onKeyEvent PLAY dispatched buttonSelected=" + btnId)
+            return true
+        end if
+        if m.extrasGrid.hasFocus()
+            if isValid(m.extrasGrid.focusedItem)
+                m.top.quickPlayNode = m.extrasGrid.focusedItem
+                return true
+            end if
+        end if
+        return false
+    end if
+
+    return false
+end function
+
+function getFileName(path as string) as string
+    if path = "" then return ""
+    ' Handle both forward and backward slashes
+    parts = path.split("/")
+    lastPart = parts[parts.Count() - 1]
+    if lastPart.instr("\") <> -1
+        parts = lastPart.split("\")
+        lastPart = parts[parts.Count() - 1]
+    end if
+    return lastPart
+end function
+
+function getDisplayResolution(height, width = 0) as string
+    if height >= 2160 or width >= 3800 then return "4K"
+    if height >= 1440 or width >= 2500 then return "1440p"
+    if height >= 1080 or width >= 1800 then return "1080p"
+    if height >= 720 or width >= 1200 then return "720p"
+    if height >= 480 or width >= 700 then return "480p"
+    if height = 0 then return ""
+    return height.ToStr() + "p"
+end function
+
+function getDisplayCodec(codec) as string
+    if not isValid(codec) then return ""
+    c = LCase(codec)
+    if c = "hevc" or c = "h265" then return "HEVC"
+    if c = "h264" or c = "avc" then return "H264"
+    if c = "vp9" then return "VP9"
+    if c = "av1" then return "AV1"
+    if c = "mpeg2video" then return "MPEG2"
+    return UCase(codec)
+end function
+
+function getDisplayVideoRange(videoRangeType as string) as string
+    if not isValid(videoRangeType) or videoRangeType = "" then return ""
+    v = LCase(videoRangeType)
+    if v = "sdr" then return "SDR"
+    if v = "hdr10" then return "HDR10"
+    if v = "hdr10plus" then return "HDR10+"
+    if v = "hlg" then return "HLG"
+    if v = "dolbyvision" or v = "dovi" then return "DV"
+    return UCase(videoRangeType)
+end function
+
+function buildAudioLabel(stream as object) as string
+    if not isValid(stream) then return ""
+
+    parts = []
+
+    languageLabel = getDisplayAudioLanguage(chainLookupReturn(stream, "DisplayLanguage", chainLookupReturn(stream, "Language", "")))
+    if languageLabel <> "" and LCase(languageLabel) <> "und" then parts.push(languageLabel)
+
+    codecLabel = getDisplayAudioCodec(chainLookupReturn(stream, "Codec", ""))
+    if codecLabel <> "" then parts.push(codecLabel)
+
+    channelsLabel = getDisplayAudioChannels(chainLookupReturn(stream, "ChannelLayout", ""))
+    if channelsLabel <> "" then parts.push(channelsLabel)
+
+    if chainLookupReturn(stream, "IsDefault", false) = true
+        parts.push(tr("Default"))
+    end if
+
+    result = sanitizeSelectorText(parts.join(" - "))
+    if result = ""
+        result = sanitizeSelectorText(chainLookupReturn(stream, "DisplayTitle", ""))
+    end if
+
+    return result
+end function
+
+function getDisplayAudioLanguage(value as dynamic) as string
+    language = sanitizeSelectorText(value)
+    if language = "" then return ""
+
+    code = LCase(language)
+    if code = "eng" or code = "en" then return "English"
+    if code = "spa" or code = "es" then return "Spanish"
+    if code = "fre" or code = "fra" or code = "fr" then return "French"
+    if code = "ger" or code = "deu" or code = "de" then return "German"
+    if code = "ita" or code = "it" then return "Italian"
+    if code = "por" or code = "pt" then return "Portuguese"
+
+    if language.Len() = 3
+        return UCase(language.Left(1)) + LCase(language.Mid(1))
+    end if
+
+    return language
+end function
+
+function getDisplayAudioCodec(value as dynamic) as string
+    codec = LCase(sanitizeSelectorText(value))
+    if codec = "" then return ""
+
+    if codec = "eac3" then return "Dolby Digital+"
+    if codec = "ac3" then return "Dolby Digital"
+    if codec = "truehd" then return "Dolby TrueHD"
+    if codec = "dca" or codec = "dts" then return "DTS"
+    if codec = "dtshd_ma" or codec = "dts-hd ma" then return "DTS-HD MA"
+    if codec = "aac" then return "AAC"
+    if codec = "flac" then return "FLAC"
+    if codec = "mp3" then return "MP3"
+    if codec = "opus" then return "Opus"
+
+    return UCase(codec)
+end function
+
+function getDisplayAudioChannels(value as dynamic) as string
+    channels = sanitizeSelectorText(value)
+    if channels = "" then return ""
+
+    channelsLower = LCase(channels)
+    if channelsLower = "stereo" then return "2.0"
+    if channelsLower = "mono" then return "1.0"
+
+    bracketIndex = channels.instr("(")
+    if bracketIndex > -1
+        channels = channels.Left(bracketIndex)
+    end if
+
+    return sanitizeSelectorText(channels)
+end function
+
+function sanitizeSelectorText(value as dynamic) as string
+    return normalizeText(value).trim()
+end function
+
+function formatRuntimeLabel(runtimeTicks as dynamic) as string
+    if not isValid(runtimeTicks) then return ""
+
+    totalMinutes = round(runtimeTicks / 600000000.0)
+    if totalMinutes <= 0 then return ""
+
+    hours = int(totalMinutes / 60)
+    minutes = totalMinutes mod 60
+
+    if hours > 0
+        if minutes > 0 then return `${hours}h ${minutes}m`
+        return `${hours}h`
+    end if
+
+    return `${minutes}m`
+end function
+
+function normalizeText(value as dynamic) as string
+    if not isValid(value) then return ""
+
+    valueType = type(value)
+    if valueType = "roString" or valueType = "String"
+        return value
+    else if valueType = "roInt" or valueType = "Integer" or valueType = "roLongInteger" or valueType = "LongInteger"
+        return stri(value)
+    else if valueType = "roFloat" or valueType = "Float"
+        return str(value)
+    end if
+
+    return ""
+end function
+
+sub createFullOverviewDialog()
+    if not isValid(m.overviewText) then return
+    if not isValidAndNotEmpty(m.overviewText.text) then return
+
+    titleText = chainLookupReturn(m.top, "itemContent.json.Name", tr("Plot"))
+    titleNode = m.top.findNode("title")
+    if isValid(titleNode) and isValidAndNotEmpty(titleNode.text)
+        titleText = titleNode.text
+    end if
+
+    m.global.sceneManager.callFunc("standardDialog", titleText, { data: ["<p>" + m.overviewText.text + "</p>"] })
+end sub
+
+function formatAddedDate(isoDate) as string
+    dateTime = CreateObject("roDateTime")
+    dateTime.FromISO8601String(isoDate)
+    dateTime.toLocalTime()
+
+    month = dateTime.getMonth().ToStr()
+    day = dateTime.getDayOfMonth().ToStr()
+    year = dateTime.getYear().ToStr().mid(2) ' get last 2 digits
+
+    ' Time part using existing formatTime
+    timeStr = formatTime(dateTime)
+
+    return month + "/" + day + "/" + year + " " + timeStr
+end function
+
+' Display confirmation dialog before deleting an item
+sub confirmDeleteItem()
+    params = {
+        id: m.top.itemContent.json.id
+    }
+    m.global.sceneManager.callFunc("optionDialog", "delete_item", tr("Confirm Deletion?"), tr("Deleting this item will delete it from both the file system and your media library. Are you sure you wish to continue?"), [tr("No"), tr("Delete")], params)
+end sub
+
+' Display filename info dialog
+' Display detailed media info dialog
+sub showFileNameInfo()
+    if not isValid(m.top.itemContent) then return
+
+    itemData = m.top.itemContent.json
+    if not isValid(itemData) then return
+
+    infoLines = []
+
+    ' 1. Path/Filename
+    filePath = ""
+    if isValid(itemData.Path) and itemData.Path <> ""
+        filePath = itemData.Path
+    else if isValid(itemData.MediaSources) and itemData.MediaSources.count() > 0
+        if isValid(itemData.MediaSources[0].Path)
+            filePath = itemData.MediaSources[0].Path
+        end if
+    end if
+
+    if filePath <> ""
+        infoLines.push(tr("Path") + ": " + filePath)
+        infoLines.push(tr("Filename") + ": " + getFileName(filePath))
+    else
+        infoLines.push(tr("Path") + ": " + tr("Not available"))
+    end if
+
+    ' 2. Media Technical Info (from selected source)
+    if isValid(itemData.MediaSources) and itemData.MediaSources.count() > 0
+        ' Use the currently selected source if possible
+        source = itemData.MediaSources[0]
+        for each s in itemData.MediaSources
+            if s.id = m.top.selectedVideoStreamId
+                source = s
+                exit for
+            end if
+        end for
+
+        infoLines.push(tr("Container") + ": " + chainLookupReturn(source, "Container", ""))
+
+        sizeGb = chainLookupReturn(source, "Size", 0) / (1024 * 1024 * 1024)
+        if sizeGb > 0
+            infoLines.push(tr("Size") + ": " + (int(sizeGb * 100) / 100).toStr() + " GB")
+        end if
+
+        for each stream in source.MediaStreams
+            if LCase(stream.Type) = "video"
+                res = getDisplayResolution(chainLookupReturn(stream, "Height", 0))
+                codec = getDisplayCodec(chainLookupReturn(stream, "Codec", ""))
+                range = getDisplayVideoRange(chainLookupReturn(stream, "VideoRangeType", ""))
+                bitrate = chainLookupReturn(stream, "BitRate", 0) / 1000
+                infoLines.push(string.EMPTY)
+                infoLines.push("--- " + tr("Video") + " ---")
+                infoLines.push(tr("Codec") + ": " + codec + " " + range)
+                infoLines.push(tr("Resolution") + ": " + res + " (" + chainLookupReturn(stream, "Width", 0).toStr() + "x" + chainLookupReturn(stream, "Height", 0).toStr() + ")")
+                if bitrate > 0 then infoLines.push(tr("Bitrate") + ": " + int(bitrate).toStr() + " kbps")
+
+                fps = chainLookupReturn(stream, "AverageFrameRate", chainLookupReturn(stream, "RealFrameRate", 0))
+                if fps > 0 then infoLines.push(tr("Framerate") + ": " + (int(fps * 100) / 100).toStr() + " fps")
+
+            else if LCase(stream.Type) = "audio"
+                codec = getDisplayAudioCodec(chainLookupReturn(stream, "Codec", ""))
+                channels = getDisplayAudioChannels(chainLookupReturn(stream, "ChannelLayout", ""))
+                lang = getDisplayAudioLanguage(chainLookupReturn(stream, "Language", ""))
+
+                infoLines.push(string.EMPTY)
+                infoLines.push("--- " + tr("Audio") + " (" + lang + ") ---")
+                infoLines.push(tr("Codec") + ": " + codec)
+                infoLines.push(tr("Channels") + ": " + channels)
+                bitrate = chainLookupReturn(stream, "BitRate", 0) / 1000
+                if bitrate > 0 then infoLines.push(tr("Bitrate") + ": " + int(bitrate).toStr() + " kbps")
+            end if
+        end for
+    end if
+
+    m.global.sceneManager.callFunc("standardDialog", tr("Media Info"), { data: infoLines })
+end sub
+

@@ -1,0 +1,17 @@
+{
+  "files": [
+    "manifest",
+    "source/**/*.*",
+    "components/**/*.*",
+    "images/**/*.*",
+    "locale/**/*.*",
+    "settings/*.*"
+  ],
+  "plugins": ["@rokucommunity/bslint"],
+  "diagnosticFilters": ["node_modules/**/*", "**/roku_modules/**/*"],
+  "sourceMap": true,
+  "autoImportComponentScript": true,
+  "stagingFolderPath": "build/staging",
+  "retainStagingFolder": false,
+  "outFile": "out/JellyVibe.zip"
+}

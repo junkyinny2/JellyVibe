@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="Home" extends="JFScreen">
+  <children>
+    <Poster id="backdrop" loadDisplayMode="scaleToZoom" width="1920" height="1200" opacity="0" />
+    <Poster id="backdropTransition" loadDisplayMode="scaleToZoom" width="1920" height="1200" opacity="0" />
+    <Animation id="homeBackdropSwapAnimation" duration="0.5" repeat="false" easeFunction="linear">
+      <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[ 0.00, 0.35 ]" fieldToInterp="backdropTransition.opacity" />
+      <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[ 0.35, 0.00 ]" fieldToInterp="backdrop.opacity" />
+    </Animation>
+
+    <!-- JellyVibe logo wordmark, always visible in top-left -->
+    <Label id="jellyfinLogo" text="JellyVibe" font="font:LargeBoldSystemFont"
+      color="#FFFFFF" translation="[75, 45]" width="240" height="60" horizAlign="left" vertAlign="center" />
+
+    <!-- Top Bar Container -->
+    <Group id="topBar" translation="[0, 45]">
+      <!-- Tabs: y=0 so they sit on the same baseline as everything else -->
+      <TextButton
+        id="homeTab"
+        text="Home"
+        fontSize="30"
+        translation="[320, 0]"
+        height="60"
+        width="160"
+        bold="true"
+        background="#00000000"
+        enableBorder="true" />
+      <TextButton
+        id="favoritesTab"
+        text="Favorites"
+        fontSize="30"
+        translation="[490, 0]"
+        height="60"
+        width="200"
+        bold="true"
+        background="#00000000"
+        enableBorder="true" />
+
+
+
+      <!-- User Profile: explicit absolute positions so it sits on the same line as tabs -->
+      <Group id="profileGroup" translation="[1100, 0]" focusable="true">
+        <Poster id="profileHighlight" uri="pkg:/images/9patch/filled-rounded.9.png" width="230" height="60" blendColor="#00000000" translation="[-8, 0]" />
+        <MaskGroup id="profileMask" maskUri="pkg:/images/icons/circle64.png" maskSize="[32,32]" translation="[0, 14]">
+          <Poster id="profileIcon" width="32" height="32" loadDisplayMode="scaleToZoom" />
+        </MaskGroup>
+        <Poster id="userIcon" uri="pkg:/images/baseline_person_white_48dp.png" width="32" height="32" loadDisplayMode="scaleToFit" translation="[38, 12]" />
+        <Text id="userName" font="font:SmallBoldSystemFont" color="#FFFFFF" vertAlign="center" translation="[76, 0]" width="150" height="60" />
+      </Group>
+
+      <!-- Search icon: 48x48 so icon is not clipped -->
+      <TextButton
+        id="searchButton"
+        iconSide="left"
+        icon="pkg:/images/icons/search-light.png"
+        focusIcon="pkg:/images/icons/search-light.png"
+        text=""
+        translation="[1560, 6]"
+        height="48"
+        width="48"
+        padding="8"
+        background="#00000000"
+        enableBorder="false" />
+
+      <!-- Settings icon: 48x48 immediately right of search -->
+      <TextButton
+        id="settingsButton"
+        iconSide="left"
+        icon="pkg:/images/icons/settings.png"
+        focusIcon="pkg:/images/icons/settings.png"
+        text=""
+        translation="[1614, 6]"
+        height="48"
+        width="48"
+        padding="8"
+        background="#00000000"
+        enableBorder="false" />
+
+      <!-- Clock: sits right of icon buttons -->
+      <Clock id="homeClock" translation="[1670, 0]" />
+    </Group>
+
+
+    <HomeRows
+      id="homeRows"
+      showRowLabel="true"
+      drawFocusFeedback="false"
+      vertFocusAnimationStyle="fixedFocus"
+      rowFocusAnimationStyle="fixedFocusWrap"
+      itemComponentName="HomeItem"
+      numRows="2"
+      rowLabelOffset="[[0,20]]"
+      itemSpacing="[20, 120]"
+      translation="[111, 160]" />
+    <OptionsSlider id="options" />
+
+    <Animation id="toggleButtonsAnimation" duration=".7" repeat="false" easeFunction="linear">
+      <FloatFieldInterpolator id="topBarFade" key="[0.0, .6]" keyValue="[1.00, 1.00]" fieldToInterp="topBar.opacity" />
+      <Vector2DFieldInterpolator id="topBarMove" key="[0.1, .9]" keyValue="[[0, 45], [0, 45]]" fieldToInterp="topBar.translation" />
+    </Animation>
+
+    <!-- Top Bar Separator Line (Rendered on top of rows) -->
+    <Rectangle id="topBarSeparator" translation="[0, 115]" width="1920" height="1" color="#FFFFFF" opacity="0.35" />
+  </children>
+  <interface>
+    <field id="playlistData" type="array" />
+    <field id="selectedItem" alias="homeRows.selectedItem" />
+    <field id="rowFocused" alias="homeRows.itemFocused" onchange="onRowFocusedChange" />
+    <field id="quickPlayNode" alias="homeRows.quickPlayNode" />
+    <function name="refresh" />
+    <function name="loadLibraries" />
+  </interface>
+
+</component>

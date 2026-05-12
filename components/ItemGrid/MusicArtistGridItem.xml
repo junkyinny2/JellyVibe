@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="MusicArtistGridItem" extends="Group">
+  <children>
+    <Group translation="[6, 6]">
+      <!-- Subtle shadow behind the poster -->
+      <Poster id="itemShadow" translation="[0,0]" uri="pkg:/images/9patch/filled-rounded.9.png" blendcolor="0x000000FF" opacity="0" />
+
+      <Group id="posterGroup">
+        <Poster id="focusOutline" uri="pkg:/images/9patch/border-6px.9.png" blendColor="#A64DFF" opacity="0" />
+        <Poster id="backdrop" blendColor="#FFFFFF" opacity=".25" translation="[0,15]" width="270" height="270" loadDisplayMode="scaleToZoom" uri="pkg:/images/white.9.png" />
+        <Poster id="itemPoster" translation="[0,15]" width="270" height="270" loadDisplayMode="scaleToZoom" />
+        <Rectangle id="postTextBackground" height="50" width="260" color="0x000000DD" translation="[5, 230]">
+          <ScrollingText id="posterText" color="#FFFFFF" maxWidth="260" height="50" horizAlign="center" vertAlign="center" />
+        </Rectangle>
+      </Group>
+
+      <!-- Shadow and focus animation -->
+      <Animation id="focusAnimation" duration="0.2" repeat="false" easeFunction="linear">
+        <Vector2DFieldInterpolator id="translationInterpolator" key="[0.0, 1.0]" keyValue="[[0, 0], [0, 0]]" fieldToInterp="posterGroup.translation" />
+        <FloatFieldInterpolator id="shadowOpacityInterpolator" key="[0.0, 1.0]" keyValue="[0.0, 0.6]" fieldToInterp="itemShadow.opacity" />
+      </Animation>
+    </Group>
+  </children>
+  <interface>
+    <field id="height" type="float" onChange="onHeightChanged" />
+    <field id="width" type="float" onChange="onWidthChanged" />
+    <field id="itemContent" type="node" onChange="itemContentChanged" />
+    <field id="itemHasFocus" type="boolean" onChange="focusChanged" alwaysNotify="true" />
+    <field id="focusPercent" type="float" onChange="onFocusPercentChange" />
+  </interface>
+
+</component>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="EmbyFilterMenu" extends="Group">
+  <children>
+    <!-- Frosty slide-down background -->
+    <Rectangle id="background" width="1920" height="280" color="#0D0D0D" opacity="0.92" />
+
+    <!-- Filter container -->
+    <Group id="filterContainer" translation="[80, 20]">
+      <Label text="Resolution" font="font:SmallBoldSystemFont" color="#AAAAAA" translation="[0, 0]" />
+      <LabelList id="resList"
+        translation="[0, 30]"
+        itemSize="[220, 50]"
+        itemSpacing="[0, 0]"
+        color="#FFFFFF"
+        focusedColor="#00A4DC"
+        numRows="4" />
+
+      <Label text="Year" font="font:SmallBoldSystemFont" color="#AAAAAA" translation="[260, 0]" />
+      <LabelList id="yearList"
+        translation="[260, 30]"
+        itemSize="[220, 50]"
+        itemSpacing="[0, 0]"
+        color="#FFFFFF"
+        focusedColor="#00A4DC"
+        numRows="4" />
+
+      <Label text="Tag" font="font:SmallBoldSystemFont" color="#AAAAAA" translation="[520, 0]" />
+      <LabelList id="tagList"
+        translation="[520, 30]"
+        itemSize="[220, 50]"
+        itemSpacing="[0, 0]"
+        color="#FFFFFF"
+        focusedColor="#00A4DC"
+        numRows="4" />
+    </Group>
+
+    <!-- Unfold animation -->
+    <Animation id="unfoldAnimation" duration="0.4" repeat="false" easeFunction="linear">
+      <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[0.0, 1.0]" fieldToInterp="background.opacity" />
+    </Animation>
+  </children>
+
+  <interface>
+    <field id="active" type="boolean" value="false" onChange="onActiveChange" />
+  </interface>
+</component>

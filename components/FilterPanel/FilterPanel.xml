@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="FilterPanel" extends="Group">
+
+  <children>
+    <!-- Click-away scrim -->
+    <Rectangle
+      id="scrim"
+      width="1920"
+      height="1080"
+      color="0x000000FF"
+      opacity="0"
+      visible="false" />
+
+    <!-- Panel body -->
+    <Group id="panelGroup" translation="[-420, 0]">
+      <Rectangle
+        id="panelBg"
+        width="420"
+        height="1080" />
+
+      <!-- Accent stripe along the right edge -->
+      <Rectangle
+        id="edgeStripe"
+        width="3"
+        height="1080"
+        translation="[417, 0]" />
+
+      <!-- Header -->
+      <Label
+        id="headerLabel"
+        text="Filters"
+        font="font:MediumBoldSystemFont"
+        width="340"
+        height="60"
+        translation="[40, 45]" />
+
+      <!-- Clear All button -->
+      <StandardButton
+        id="clearAllBtn"
+        text="Clear All"
+        height="55"
+        width="140"
+        translation="[240, 50]" />
+
+      <!-- Divider under header -->
+      <Rectangle
+        id="headerDivider"
+        width="380"
+        height="2"
+        translation="[20, 115]" />
+
+      <!-- Genres section -->
+      <FilterSection
+        id="genresSection"
+        sectionTitle="Genres"
+        translation="[0, 130]" />
+
+      <!-- Tags section -->
+      <FilterSection
+        id="tagsSection"
+        sectionTitle="Tags"
+        translation="[0, 0]" />
+      <!-- tagsSection translation is set dynamically below genresSection -->
+    </Group>
+
+    <!-- Slide-in animation -->
+    <Animation id="slideInAnim" duration="0.3" repeat="false"
+               easeFunction="inOutCubic">
+      <Vector2DFieldInterpolator
+        id="slideInInterp"
+        key="[0.0, 1.0]"
+        keyValue="[[-420, 0], [0, 0]]"
+        fieldToInterp="panelGroup.translation" />
+      <FloatFieldInterpolator
+        key="[0.0, 1.0]"
+        keyValue="[0.0, 0.55]"
+        fieldToInterp="scrim.opacity" />
+    </Animation>
+
+    <!-- Slide-out animation -->
+    <Animation id="slideOutAnim" duration="0.3" repeat="false"
+               easeFunction="inOutCubic">
+      <Vector2DFieldInterpolator
+        id="slideOutInterp"
+        key="[0.0, 1.0]"
+        keyValue="[[0, 0], [-420, 0]]"
+        fieldToInterp="panelGroup.translation" />
+      <FloatFieldInterpolator
+        key="[0.0, 1.0]"
+        keyValue="[0.55, 0.0]"
+        fieldToInterp="scrim.opacity" />
+    </Animation>
+  </children>
+
+  <interface>
+    <!-- Control: set true to slide open, false to close -->
+    <field id="isOpen"          type="boolean"     value="false"
+           onChange="onIsOpenChanged" />
+
+    <!-- Input: library / parent folder ID for API queries -->
+    <field id="parentId"        type="string"      value="" />
+
+    <!-- Input: e.g. "Movie", "Series" – passed to /Items/Filters2 -->
+    <field id="itemType"        type="string"      value="" />
+
+    <!-- Output: currently selected genre names -->
+    <field id="selectedGenres"  type="stringarray" />
+
+    <!-- Output: currently selected tag names -->
+    <field id="selectedTags"    type="stringarray" />
+
+    <!-- Output: fires every time a checkbox changes; carries full state -->
+    <field id="filterChanged"   type="assocarray" />
+  </interface>
+
+</component>

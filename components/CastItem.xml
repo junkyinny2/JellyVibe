@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="CastItem" extends="Group">
+  <children>
+    <!-- Focus ring (shown on focus) -->
+    <Poster id="focusRing" uri="pkg:/images/icons/circle.png" width="140" height="140"
+            translation="[0, -5]" blendColor="#00A4DC" visible="false" />
+    <!-- Circle-masked photo: maskSize=130x130, Poster is tall (180) so top of portrait (face) shows -->
+    <MaskGroup id="photoMask" maskUri="pkg:/images/icons/circle.png" maskSize="[130, 130]" translation="[5, 0]">
+      <Poster id="photo" width="130" height="180" loadDisplayMode="scaleToZoom" />
+    </MaskGroup>
+    <!-- Actor name -->
+    <Text id="name" width="140" height="52" horizAlign="center"
+          font="font:SmallSystemFont" translation="[0, 136]" color="#FFFFFF" wrap="true" maxLines="2" />
+    <!-- Character / role -->
+    <Text id="role" width="140" height="32" horizAlign="center"
+          font="font:SmallestSystemFont" translation="[0, 192]" color="#AAAAAA" wrap="true" maxLines="2" />
+  </children>
+  <interface>
+    <field id="itemContent" type="node" onChange="itemContentChanged" />
+    <field id="itemHasFocus" type="boolean" onChange="focusChanged" />
+  </interface>
+</component>
