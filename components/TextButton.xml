@@ -5,7 +5,7 @@
     <Poster id="buttonBorder" uri="pkg:/images/9patch/border-6px.9.png" />
     <Poster id="buttonIcon" />
     <Label id="buttonText" vertAlign="center" font="font:MediumSystemFont" horizAlign="left" />
-    <ScrollingText id="buttonTextScrolling" color="#FFFFFF" font="font:MediumSystemFont" repeatCount="-1" visible="false" />
+    <ScrollingText id="buttonTextScrolling" color="#FFFFFF" font="font:MediumSystemFont" vertAlign="center" repeatCount="-1" visible="false" />
     <Timer id="scrollDelayTimer" duration="1.5" repeat="false" />
   </children>
   <interface>

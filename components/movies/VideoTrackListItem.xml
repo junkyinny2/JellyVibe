@@ -3,7 +3,7 @@
   <children>
     <Rectangle id="focusBackground" width="900" height="100" color="0xFFFFFFFF" opacity="0.0" />
     <Poster width="32" height="32" id="selectedIcon" translation="[15,34]" uri="" />
-    <Label id="title" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" translation="[60,10]" />
+    <Label id="title" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" translation="[60,10]" />
     <Label id="description" font="font:SmallSystemFont" color="0xBBBBBBFF" width="800" translation="[60,50]" />
   </children>
   <interface>

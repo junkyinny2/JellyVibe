@@ -107,6 +107,9 @@ end sub
 sub onFontSizeChanged()
     if m.top.fontSize > 0
         m.buttonText.font.size = m.top.fontSize
+        if isValid(m.buttonTextScrolling) and isValid(m.buttonTextScrolling.font)
+            m.buttonTextScrolling.font.size = m.top.fontSize
+        end if
     end if
     setIconSize()
 end sub
@@ -219,6 +222,9 @@ end sub
 
 sub onTextChanged()
     m.buttonText.text = m.top.text
+    if m.top.fontSize > 0
+        m.buttonText.font.size = m.top.fontSize
+    end if
     setIconSize()
 end sub
 

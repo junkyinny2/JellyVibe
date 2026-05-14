@@ -45,7 +45,7 @@
     <!-- Stream selector row pinned above action controls -->
     <LayoutGroup id="streamSelectorRow" layoutDirection="horiz" horizAlignment="left" itemSpacings="[15]" translation="[100, 758]">
 
-      <!-- Video column -->
+       <!-- Video column -->
       <LayoutGroup layoutDirection="vert" itemSpacings="[4]">
         <Text id="videoLabel" text="Video" font="font:SmallestBoldSystemFont" color="#bbbbbb" />
         <TextButton id="videoButton" iconSide="right" fontSize="22" padding="15"
@@ -94,6 +94,11 @@
       </Group>
       <Poster id="rightButtonArrow" uri="pkg:/images/icons/right_white.png" width="30" height="30" translation="[950, 22]" visible="false" opacity="0.5" />
     </Group>
+
+    <!-- Inline dropdowns for stream selectors -->
+    <StreamDropdown id="videoDropdown" visible="false" anchorX="100" anchorY="780" itemWidth="320" />
+    <StreamDropdown id="audioDropdown" visible="false" anchorX="435" anchorY="780" itemWidth="300" />
+    <StreamDropdown id="subtitleDropdown" visible="false" anchorX="750" anchorY="780" itemWidth="220" />
 
     <MovieOptions id="movieOptions" visible="false" />
     <Label id="dateAdded" font="font:SmallestSystemFont" color="#bbbbbb" width="560" horizAlign="right" translation="[1320, 980]" />

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="StreamDropdownItem" extends="Group">
+  <script type="text/brightscript" uri="StreamDropdownItem.bs" />
+  <interface>
+    <field id="itemContent" type="node" />
+    <field id="focusPercent" type="float" />
+    <field id="itemHasFocus" type="boolean" />
+    <field id="index" type="integer" />
+    <field id="width" type="float" />
+    <field id="height" type="float" />
+  </interface>
+
+  <children>
+    <Rectangle id="bg" color="#1e1e26" />
+    <Poster id="check" width="16" height="16" translation="[8, 24]" uri="pkg:/images/icons/check_white.png" blendColor="#ffffff" visible="false" />
+    <Label id="title" font="font:SmallestBoldSystemFont" color="#e8e8ee" translation="[30, 8]" maxLines="1" width="280" height="24" />
+    <Label id="subtitle" font="font:SmallestSystemFont" color="#999999" translation="[30, 34]" maxLines="1" width="280" height="20" visible="false" />
+  </children>
+</component>

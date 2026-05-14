@@ -213,6 +213,15 @@ sub init()
     ]
     traceStep("MOVIE_TRACE", "MovieDetails.init selectorNodes lookup end")
 
+    ' Inline dropdowns for stream selection
+    m.videoDropdown = m.top.findNode("videoDropdown")
+    m.audioDropdown = m.top.findNode("audioDropdown")
+    m.subtitleDropdown = m.top.findNode("subtitleDropdown")
+    m.videoDropdown.observeField("selectedIndex", "onVideoDropdownSelect")
+    m.audioDropdown.observeField("selectedIndex", "onAudioDropdownSelect")
+    m.subtitleDropdown.observeField("selectedIndex", "onSubtitleDropdownSelect")
+    m.activeSelectorIndex = -1
+
     m.previouslySelectedButtonIndex = -1
 
     ' Mirror TVSeriesDetails button focus pattern
@@ -503,21 +512,117 @@ sub restoreSelectorFocusAfterExtrasExit(reason as string)
 end sub
 
 sub openSelectorOptionsByIndex(selectorIndex as integer)
-    if not isValid(m.options) then return
-
     traceStep("MOVIE_TRACE", "MovieDetails.openSelectorOptionsByIndex start selector=" + stri(selectorIndex).trim())
-    m.options.visible = true
-    m.options.setFocus(true)
+
+    ' If clicking same dropdown, hide it (toggle behavior)
+    if m.activeSelectorIndex = selectorIndex
+        closeAllDropdowns()
+        traceStep("MOVIE_TRACE", "MovieDetails.openSelectorOptionsByIndex toggled off")
+        return
+    end if
+
+    ' Close any other open dropdown
+    closeAllDropdowns()
+
+    m.activeSelectorIndex = selectorIndex
 
     if selectorIndex = 0
-        m.options.callFunc("showVideoMenu")
+        m.videoDropdown.callFunc("show")
     else if selectorIndex = 1
-        m.options.callFunc("showAudioMenu")
+        m.audioDropdown.callFunc("show")
     else
-        m.options.callFunc("showSubtitleMenu")
+        m.subtitleDropdown.callFunc("show")
     end if
 
     traceStep("MOVIE_TRACE", "MovieDetails.openSelectorOptionsByIndex end selector=" + stri(selectorIndex).trim())
+end sub
+
+sub closeAllDropdowns()
+    m.videoDropdown.callFunc("hide")
+    m.audioDropdown.callFunc("hide")
+    m.subtitleDropdown.callFunc("hide")
+    m.activeSelectorIndex = -1
+end sub
+
+sub onVideoDropdownSelect()
+    selected = m.videoDropdown.selectedIndex
+    if selected < 0 then return
+
+    options = m.options.options
+    if not isValid(options) or not isValid(options.videos) then return
+    if selected >= options.videos.Count() then return
+
+    selectedVideo = options.videos[selected]
+    if m.top.selectedVideoStreamId <> selectedVideo.StreamID
+        m.top.selectedVideoStreamId = selectedVideo.StreamID
+    end if
+    closeAllDropdowns()
+
+    ' Update button text
+    videoButton = m.top.findNode("videoButton")
+    if isValid(videoButton)
+        videoButton.text = sanitizeSelectorText(selectedVideo.Title)
+    end if
+
+    ' Update video_codec label
+    if isValid(selectedVideo.video_codec) and selectedVideo.video_codec <> ""
+        setFieldText("video_codec", tr("Video") + ": " + selectedVideo.video_codec)
+    end if
+
+    ' Return focus to selector row
+    m.focusRow = 1
+    updateFocus()
+end sub
+
+sub onAudioDropdownSelect()
+    selected = m.audioDropdown.selectedIndex
+    if selected < 0 then return
+
+    options = m.options.options
+    if not isValid(options) or not isValid(options.audios) then return
+    if selected >= options.audios.Count() then return
+
+    selectedAudio = options.audios[selected]
+    newIndex = selectedAudio.StreamIndex
+
+    if m.top.selectedAudioStreamIndex <> newIndex
+        m.top.selectedAudioStreamIndex = newIndex
+    end if
+    closeAllDropdowns()
+
+    ' Update button text
+    audioButton = m.top.findNode("audioButton")
+    if isValid(audioButton)
+        audioButton.text = sanitizeSelectorText(selectedAudio.Title)
+    end if
+
+    ' Return focus to selector row
+    m.focusRow = 1
+    updateFocus()
+end sub
+
+sub onSubtitleDropdownSelect()
+    selected = m.subtitleDropdown.selectedIndex
+    if selected < 0 then return
+
+    options = m.options.options
+    if not isValid(options) or not isValid(options.subtitles) then return
+    if selected >= options.subtitles.Count() then return
+
+    selectedSub = options.subtitles[selected]
+    m.global.queueManager.callFunc("setPreferredSubtitleTrack", selectedSub)
+
+    closeAllDropdowns()
+
+    ' Update button text
+    subtitleButton = m.top.findNode("subtitleButton")
+    if isValid(subtitleButton)
+        subtitleButton.text = sanitizeSelectorText(selectedSub.Title)
+    end if
+
+    ' Return focus to selector row
+    m.focusRow = 1
+    updateFocus()
 end sub
 
 sub calculateButtonThumbProperties()
@@ -1247,6 +1352,17 @@ sub SetUpVideoOptions(streams)
     options = {}
     options.videos = videos
     m.options.options = options
+
+    ' Build ContentNode for inline dropdown
+    videoContent = CreateObject("roSGNode", "ContentNode")
+    for each v in videos
+        child = videoContent.CreateChild("ContentNode")
+        child.title = v.Title
+        child.description = v.Description
+        child.selected = v.Selected
+        child.streamid = v.StreamID
+    end for
+    m.videoDropdown.content = videoContent
 end sub
 
 sub SetUpAudioOptions(streams)
@@ -1296,6 +1412,34 @@ sub SetUpAudioOptions(streams)
     options.audios = audioTracks
     options.subtitles = subtitleTracks
     m.options.options = options
+
+    ' Build ContentNode for audio dropdown
+    audioContent = CreateObject("roSGNode", "ContentNode")
+    for each a in audioTracks
+        child = audioContent.CreateChild("ContentNode")
+        child.title = a.Title
+        child.addField("description", "string", true)
+        child.description = a.Description
+        child.addField("selected", "boolean", true)
+        child.selected = a.Selected
+        child.addField("streamIndex", "integer", true)
+        child.streamIndex = a.StreamIndex
+    end for
+    m.audioDropdown.content = audioContent
+
+    ' Build ContentNode for subtitle dropdown
+    subContent = CreateObject("roSGNode", "ContentNode")
+    for each s in subtitleTracks
+        child = subContent.CreateChild("ContentNode")
+        child.title = s.Title
+        child.addField("description", "string", true)
+        child.description = s.Description
+        child.addField("selected", "boolean", true)
+        child.selected = s.Selected
+        child.addField("streamIndex", "integer", true)
+        child.streamIndex = s.StreamIndex
+    end for
+    m.subtitleDropdown.content = subContent
 
     ' Update labels on main screen
     audioButton = m.top.findNode("audioButton")
@@ -1773,6 +1917,16 @@ end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
+
+    ' If a dropdown is open, handle BACK and UP to close it
+    if m.videoDropdown.visible or m.audioDropdown.visible or m.subtitleDropdown.visible
+        if key = KeyCode.BACK or key = KeyCode.UP
+            closeAllDropdowns()
+            m.focusRow = 1
+            updateFocus()
+            return true
+        end if
+    end if
 
     if key = KeyCode.UP
         if m.extrasGrid.isInFocusChain()
