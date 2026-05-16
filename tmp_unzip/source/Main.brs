@@ -1,0 +1,340 @@
+'import "pkg:/components/manager/ViewCreator.bs"
+'import "pkg:/source/enums/ItemType.bs"
+'import "pkg:/source/enums/String.bs"
+
+sub Main(args as dynamic) as void
+    ' The main function that runs when the application is launched.
+    m.screen = CreateObject("roSGScreen")
+    m.port = CreateObject("roMessagePort")
+    m.screen.setMessagePort(m.port)
+    ' Set global constants
+    setConstants()
+    ' Set any initial Global Variables
+    m.global = m.screen.getGlobalNode()
+    SaveAppToGlobal()
+    SaveDeviceToGlobal()
+    session_Init()
+    m.scene = m.screen.CreateScene("BaseScene")
+    ' Set default background color
+    m.scene.backgroundColor = chainLookupReturn(m.global.session, "user.settings.colorBackground", "#020B2A")
+    m.screen.show() ' vscode_rale_tracker_entry
+    'vscode_rdb_on_device_component_entry
+    playstateTask = CreateObject("roSGNode", "PlaystateTask")
+    playstateTask.id = "playstateTask"
+    sceneManager = CreateObject("roSGNode", "SceneManager")
+    sceneManager.id = "sceneManager"
+    m.global.addFields({
+        sceneManager: sceneManager
+    })
+    print "[MAIN] SceneManager created with id=" + m.global.sceneManager.id
+    overhang = m.scene.findNode("overhang")
+    m.global.addFields({
+        app_loaded: false
+        playstateTask: playstateTask
+    })
+    m.global.addFields({
+        queueManager: CreateObject("roSGNode", "QueueManager")
+    })
+    m.global.addFields({
+        audioPlayer: CreateObject("roSGNode", "AudioPlayer")
+    })
+    m.global.addFields({
+        jumpTo: {}
+    })
+    m.global.addFields({
+        fallbackFont: ""
+    })
+    ' Add reentry guard to prevent auto-reentry after backing out
+    m.global.addFields({
+        reentryGuardActive: false
+    })
+    ' Add timer to m.global via addFields
+    reentryGuardTimer = CreateObject("roSGNode", "Timer")
+    reentryGuardTimer.duration = 1.0
+    m.global.addFields({
+        reentryGuardTimer: reentryGuardTimer
+    })
+    ' CRITICAL: Set up observation on sceneManager AFTER the port is created
+    m.global.sceneManager.observeField("dataReturned", m.port)
+    print "[MAIN] SceneManager dataReturned observation set up on correct port"
+    m.global.reentryGuardTimer.observeField("fire", m.port)
+    m.global.observeField("jumpTo", m.port)
+    audioMiniPlayer = m.scene.findNode("audioMiniPlayer")
+    if isValid(audioMiniPlayer)
+        audioMiniPlayer.callFunc("setup")
+    end if
+    app_start:
+    ' First thing to do is validate the ability to use the API
+    if not LoginFlow() then
+        return
+    end if
+    ' Set user's chosen colors
+    setUserColors()
+    ' remove login scenes from the stack
+    m.global.sceneManager.callFunc("clearScenes")
+    ' load home page
+    group = CreateHomeGroup()
+    group.callFunc("loadLibraries")
+    stopLoadingSpinner()
+    m.global.sceneManager.callFunc("pushScene", group)
+    m.scene.observeField("exit", m.port)
+    ' Download and store the fallback font to tmp:/
+    ' This font may be used for CJK subtitles
+    downloadFallbackFont()
+    ' Refresh overhang title font so it can change to fallback if desired
+    if isValid(overhang)
+        titleLabel = overhang.findNode("overlayTitle")
+        if isValid(titleLabel)
+            titleLabel.font = "font:LargeSystemFont"
+        end if
+    end if
+    if isValid(audioMiniPlayer)
+        songLabel = audioMiniPlayer.findNode("song")
+        if isValid(songLabel)
+            songLabel.font = "font:MediumSystemFont"
+        end if
+    end if
+    ' Delete any old library filters
+    clearOldLibraryFilters()
+    displayWhatsNewPopup(args)
+    ' Handle input messages
+    input = CreateObject("roInput")
+    input.SetMessagePort(m.port)
+    device = CreateObject("roDeviceInfo")
+    device.setMessagePort(m.port)
+    device.EnableScreensaverExitedEvent(true)
+    device.EnableAudioGuideChangedEvent(true)
+    device.EnableLowGeneralMemoryEvent(true)
+    device.EnableCodecCapChangedEvent(true)
+    ' Check if we were sent content to play with the startup command (Deep Link)
+    onDeepLinkingEvent(args)
+    while true
+        msg = wait(0, m.port)
+        ' Debug: Print all node events to trace what's coming in
+        if type(msg) = "roSGNodeEvent"
+            node = msg.getRoSGNode()
+            print "[MAIN EVENT] type=roSGNodeEvent field=" + msg.getField() + " node=" + node.id
+            ' Special check for sceneManager events
+            if node.id = "sceneManager"
+                print "[MAIN EVENT] *** SCENEMANAGER EVENT *** field=" + msg.getField()
+            end if
+        end if
+        if type(msg) = "roSGScreenEvent" and msg.isScreenClosed()
+            print "SCREEN CLOSED"
+            return
+        end if
+        if isNodeEvent(msg, "exit")
+            print "CLOSING SCREEN"
+            return
+        end if
+        if isNodeEvent(msg, "jumpTo")
+            onJumpToEvent(msg)
+        else if isNodeEvent(msg, "closeSidePanel")
+            onCloseSidePanelEvent()
+        else if isNodeEvent(msg, "quickPlayNode")
+            onQuickPlayEvent(msg)
+        else if isNodeEvent(msg, "refreshSeasonDetailsData")
+            onRefreshSeasonDetailsDataEvent()
+        else if isNodeEvent(msg, "refreshMovieDetailsData")
+            onRefreshMovieDetailsDataEvent()
+        else if isNodeEvent(msg, "selectedItem")
+            onSelectedItemEvent(msg)
+        else if isNodeEvent(msg, "movieSelected")
+            onMovieSelectedEvent(msg)
+        else if isNodeEvent(msg, "seriesSelected")
+            onSeriesSelectedEvent(msg)
+        else if isNodeEvent(msg, "seasonSelected")
+            onSeasonSelectedEvent(msg)
+        else if isNodeEvent(msg, "playSeriesFromStart")
+            onPlaySeriesFromStartEvent(msg)
+        else if isNodeEvent(msg, "playSeasonFromStart")
+            onPlaySeasonFromStartEvent(msg)
+        else if isNodeEvent(msg, "musicAlbumSelected")
+            onMusicAlbumSelectedEvent(msg)
+        else if isNodeEvent(msg, "appearsOnSelected")
+            onAppearsOnSelectedEvent(msg)
+        else if isNodeEvent(msg, "similarArtistSelected")
+            onSimilarArtistSelectedEvent(msg)
+        else if isNodeEvent(msg, "playSong")
+            onPlaySongEvent(msg)
+        else if isNodeEvent(msg, "playAlbumSelected")
+            onPlayAlbumEvent(msg)
+        else if isNodeEvent(msg, "shuffleAlbumSelected")
+            onShuffleAlbumEvent(msg)
+        else if isNodeEvent(msg, "subtitleToDelete")
+            onSubtitleToDeleteEvent(msg)
+        else if isNodeEvent(msg, "subtitleSearchButtonSelected")
+            onSubtitleSearchButtonSelectedEvent()
+        else if isNodeEvent(msg, "subtitleLanguageButtonSelected")
+            onSubtitleLanguageButtonSelectedEvent()
+        else if isNodeEvent(msg, "playlistItemSelected")
+            onPlaylistItemSelectedEvent(msg)
+        else if isNodeEvent(msg, "playArtistSelected")
+            onPlayArtistSelectedEvent(msg)
+        else if isNodeEvent(msg, "instantMixSelected")
+            onInstantMixSelectedEvent(msg)
+        else if isNodeEvent(msg, "search_value")
+            onSearch_valueEvent(msg)
+        else if isNodeEvent(msg, "itemSelected")
+            onItemSelectedEvent(msg)
+        else if isNodeEvent(msg, "buttonSelected")
+            onButtonSelectedEvent(msg)
+        else if isNodeEvent(msg, "content")
+            node = msg.getRoSGNode()
+            if isValid(node) and isValid(m.pendingMovieMetadataTask) and isChainValid(node, "itemsToLoad") and isStringEqual(node.itemsToLoad, "metaData")
+                traceStep("MOVIE_TRACE", "Main loop routing content event to onMovieMetadataPreloaded")
+                onMovieMetadataPreloaded()
+            else
+                onContentEvent(msg)
+            end if
+        else if isNodeEvent(msg, "userMenuOptionSelected")
+            button = msg.getRoSGNode()
+            group = m.global.sceneManager.callFunc("getActiveScene")
+            if isStringEqual(button.id, "change_server")
+                unset_setting("server")
+                session_server_Delete()
+                SignOut(false)
+                setUserColors()
+                m.global.sceneManager.callFunc("clearScenes")
+                goto app_start
+            else if isStringEqual(button.id, "change_user")
+                SignOut(false)
+                ' Reset colors to defaults
+                setUserColors()
+                m.global.sceneManager.callFunc("clearScenes")
+                goto app_start
+            else if isStringEqual(button.id, "sign_out")
+                SignOut()
+                setUserColors()
+                m.global.sceneManager.callFunc("clearScenes")
+                goto app_start
+            end if
+        else if isNodeEvent(msg, "state")
+            onStateEvent(msg)
+        else if type(msg) = "roDeviceInfoEvent"
+            onRoDeviceInfoEvent(msg)
+        else if type(msg) = "roInputEvent"
+            if msg.IsInput()
+                info = msg.GetInfo()
+                onDeepLinkingEvent(info)
+            end if
+        else if isNodeEvent(msg, "returnData")
+            onReturnDataEvent(msg)
+        else if isNodeEvent(msg, "dataReturned")
+            node = msg.getRoSGNode()
+            print "[MAIN] dataReturned event received from node " + node.id
+            onDataReturnedEvent(msg)
+        else if isNodeEvent(msg, "fire")
+            node = msg.getRoSGNode()
+            if isValid(node) and isValid(m.global.reentryGuardTimer) and node.id = m.global.reentryGuardTimer.id
+                onGlobalReentryGuardExpired()
+            end if
+        else
+            print "Unhandled " type(msg)
+            print msg
+        end if
+    end while
+end sub
+
+sub onGlobalReentryGuardExpired()
+    m.global.reentryGuardActive = false
+    print "[REENTRY_GUARD] Global reentry guard expired"
+end sub
+
+sub downloadFallbackFont()
+    configEncoding = api_system_GetConfigurationByName("encoding")
+    if isChainValid(configEncoding, "EnableFallbackFont")
+        if configEncoding.EnableFallbackFont
+            re = CreateObject("roRegex", "Name.:.(.*?).,.Size", "s")
+            filename = APIRequest("FallbackFont/Fonts").GetToString()
+            if isValid(filename)
+                filename = re.match(filename)
+                if isValidAndNotEmpty(filename)
+                    filename = filename[1]
+                    APIRequest("FallbackFont/Fonts/" + filename).gettofile("tmp:/font")
+                    m.global.fallbackFont = "tmp:/font"
+                end if
+            end if
+        end if
+    end if
+end sub
+
+sub clearOldLibraryFilters()
+    forgetFilters = (function(m)
+            __bsConsequent = m.global.session.user.settings["itemgrid.forgetFilters"]
+            if __bsConsequent <> invalid then
+                return __bsConsequent
+            else
+                return true
+            end if
+        end function)(m)
+    if not forgetFilters then
+        return
+    end if
+    for each settingKeys in m.global.session.user.settings.keys()
+        if isStringEqual(left(settingKeys, 8), "display.")
+            if isStringEqual(right(settingKeys, 7), ".filter") or isStringEqual(right(settingKeys, 14), ".filterOptions")
+                m.global.session.user.settings.delete(settingKeys)
+                unset_user_setting(settingKeys)
+            end if
+        end if
+    end for
+end sub
+
+sub displayWhatsNewPopup(args)
+    ' Bypass What's New popup if server is Jellyfin demo
+    if isStringEqual(m.global.session.server.url, "https://demo.jellyfin.org/stable")
+        set_user_setting("LastRunVersion", m.global.app.version)
+    end if
+    ' Bypass What's New popup if deep linking arguments were passed
+    if isValidAndNotEmpty(args.mediaType) and isValidAndNotEmpty(args.contentId)
+        set_user_setting("LastRunVersion", m.global.app.version)
+    end if
+    ' Has the current user run this version before?
+    usersLastRunVersion = m.global.session.user.settings.lastRunVersion
+    if ChannelVersionUpdated(usersLastRunVersion)
+        set_user_setting("LastRunVersion", m.global.app.version)
+        ' show what's new popup
+        if m.global.session.user.settings["load.allowwhatsnew"]
+            m.global.sceneManager.callFunc("whatsNewDialog")
+        end if
+    end if
+end sub
+
+sub setUserColors()
+    setBackgroundColor()
+    setBackgroundImage()
+    setOverhangColors()
+end sub
+
+sub setBackgroundColor()
+    m.scene.backgroundColor = "#020B2A"
+end sub
+
+sub setBackgroundImage()
+    selectedBackgroundImage = chainLookupReturn(m.global.session, "user.settings.imageBackground", "")
+    if isStringEqual(selectedBackgroundImage, "splash")
+        selectedBackgroundImage = api_branding_GetSplashScreen({
+            format: "jpg"
+            foregroundLayer: 1
+            fillWidth: 1920
+            width: 1920
+            fillHeight: 1080
+            height: 1080
+            tag: "splash"
+        })
+    end if
+    m.scene.callFunc("setBackgroundImage", selectedBackgroundImage)
+end sub
+
+sub setOverhangColors()
+    overhang = m.scene.findNode("overhang")
+    if not isValid(overhang) then
+        return
+    end if
+    overlayCurrentUserSelection = overhang.findNode("overlayCurrentUserSelection")
+    overlayCurrentUserSelection.blendColor = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+    overlayCurrentUser = overhang.findNode("overlayCurrentUser")
+    overlayCurrentUser.color = chainLookupReturn(m.global.session, "user.settings.colorHomeUsername", "#ffffff")
+end sub
+'//# sourceMappingURL=./Main.brs.map

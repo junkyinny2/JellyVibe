@@ -98,6 +98,10 @@ sub setupNodes()
     end for
 
     m.selectedTag = ""
+    m.selectedGenreId = ""
+    m.genresExitRestoreTitle = ""
+    m.genresExitRestoreIndex = -1
+    m.cachedGenresContentNode = invalid
     ' After TagDetails back: scroll/focus restore (title match beats stale index)
     m.tagsExitRestoreTitle = ""
     m.tagsExitRestoreIndex = -1
@@ -178,7 +182,6 @@ sub init()
     m.categoryTabs.observeField("itemFocused", "onCategoryFocused")
 
     m.tabFocusIndex = 0
-    m.tabSelectedIndex = 0
 
     m.reentryGuardActive = false
     m.movieTopTabCategories = ["Movies", "Suggestions", "Trailers", "Playlists", "Collections", "Favorites", "Genres", "Tags", "Folders"]
@@ -209,7 +212,6 @@ sub init()
     if isValid(m.selectedItemOverview)
         m.selectedItemOverview.color = ColorPalette.WHITE
     end if
-
 end sub
 
 
@@ -280,7 +282,7 @@ function getActiveMovieCategory() as string
     if isStringEqual(m.filter, "Favorites") then return "Favorites"
     if isStringEqual(m.view, "tags") or isStringEqual(m.view, "Tags") or isStringEqual(m.view, "TagDetails") then return "Tags"
     if isStringEqual(m.view, "presentation") then return "Suggestions"
-    if isStringEqual(m.view, "genres") or isStringEqual(m.view, "Genres") then return "Genres"
+    if isStringEqual(m.view, "genres") or isStringEqual(m.view, "Genres") or isStringEqual(m.view, "GenreDetails") then return "Genres"
     return "Movies"
 end function
 
@@ -417,6 +419,11 @@ sub reloadCategoryResults()
         m.loadItemsTask.itemId = m.top.parentItem.Id
         m.loadItemsTask.genreIds = string.EMPTY
         m.loadItemsTask.studioIds = string.EMPTY
+        ' Start spinner for Folders loading
+        if LCase(m.filter) = "folders"
+            startLoadingSpinner(false)
+            showLoadingStatusText(tr("Loading folders..."))
+        end if
     end if
 
     m.loadedRows = 0
@@ -826,7 +833,7 @@ sub setupUILayoutForView()
     m.emptyText.visible = false
 
     view = LCase(m.view)
-    if view = "grid" or view = "tags"
+    if view = "grid" or view = "tags" or view = "genres"
         m.itemGrid.visible = true
         m.itemGrid.opacity = 1.0
         ' floatingFocus animates focusPercent while scrolling; GridItemSmall ring goes transparent
@@ -1526,45 +1533,29 @@ sub ItemDataLoaded(msg)
     end if
 
     if isStringEqual(m.view, "Genres")
-        ' Reset genre list data
-        m.genreData.removeChildren(m.genreData.getChildren(-1, 0))
-
-        for each item in itemData
-            m.genreData.appendChild(item)
-        end for
-
-        m.loadedItems = m.genreData.getChildCount()
-
-        m.itemGrid.opacity = 0
-        m.genreList.opacity = 1
-
-        if not m.categoryTabs.isinFocusChain()
-            m.genreList.setFocus(true)
-            group = m.global.sceneManager.callFunc("getActiveScene")
-            group.lastFocus = m.genreList
+        m.data.removeChildren(m.data.getChildren(-1, 0))
+        if itemData <> invalid and itemData.Count() > 0
+            m.data.appendChildren(itemData)
+            m.cachedGenresContentNode = m.data
+            m.emptyText.visible = false
+        else
+            m.emptyText.text = tr("No genres found on this server.")
+            m.emptyText.visible = true
         end if
+        m.loadedItems = m.data.getChildCount()
+        m.itemGrid.opacity = 1.0
+        m.itemGrid.visible = true
+        m.itemGrid.vertFocusAnimationStyle = "fixed"
+        m.itemGrid.setFocus(true)
+        m.genreList.opacity = 0
+        scheduleGenresGridRestoreFocus()
 
         if isValid(m.loadingSpinner)
             m.loadingSpinner.visible = false
             m.loadingSpinner.control = "stop"
         end if
         stopLoadingSpinner()
-
-        ' Return focus to options menu if it was opened while library was loading
-        if m.options.visible
-            m.options.setFocus(true)
-            group.lastFocus = m.options
-        end if
-
-        if m.loadedItems = 0
-            m.emptyText.text = tr("No items found. Try adjusting your selected filters.")
-            m.emptyText.visible = true
-            m.voiceBox.setfocus(true)
-            setSearchBackground(SearchButtonState.ACTIVE)
-            group = m.global.sceneManager.callFunc("getActiveScene")
-            group.lastFocus = m.voiceBox
-        end if
-
+        hideLoadingStatusText()
         return
     end if
 
@@ -1644,6 +1635,7 @@ sub ItemDataLoaded(msg)
         group.lastFocus = m.voiceBox
     end if
 
+    hideLoadingStatusText()
     stopLoadingSpinner()
     ' Return focus to options menu if it was opened while library was loading
     if m.options.visible
@@ -2050,6 +2042,14 @@ sub onItemSelected()
         end if
         m.selectedTag = item.title
         enterTagDetails(item.title)
+    else if isStringEqual(m.view, "Genres")
+        m.genresExitRestoreTitle = item.title
+        m.genresExitRestoreIndex = m.itemGrid.itemFocused
+        if m.genresExitRestoreIndex < 0
+            m.genresExitRestoreIndex = m.itemGrid.itemSelected
+        end if
+        m.selectedTag = item.title
+        enterGenreDetails(item.id)
     else
         m.top.selectedItem = item
     end if
@@ -2111,6 +2111,158 @@ sub loadTagDetailsItems()
     m.loadItemsTask.passToItem = { libraryID: m.top.parentItem.id }
 
     m.loadItemsTask.control = TaskControl.RUN
+end sub
+
+sub enterGenreDetails(genreId as string)
+    m.view = "GenreDetails"
+    m.selectedGenreId = genreId
+
+    m.cachedGenresContentNode = m.data
+
+    m.topBar.visible = false
+    m.tagTitle.text = ""
+    m.tagTitle.visible = false
+
+    m.loadedRows = 0
+    m.loadedItems = 0
+    m.data = CreateObject("roSGNode", "ContentNode")
+    m.itemGrid.content = m.data
+    m.itemGrid.vertFocusAnimationStyle = "floatingFocus"
+
+    m.itemGrid.translation = [100, 0]
+    m.itemGrid.numRows = 5
+    m.selectedItemOverview.visible = false
+    m.selectedItemName.visible = false
+    m.infoGroup.visible = false
+    m.newBackdrop.opacity = 0
+
+    loadGenreDetailsItems()
+end sub
+
+sub loadGenreDetailsItems()
+    if not isValidAndNotEmpty(m.selectedGenreId)
+        return
+    end if
+
+    m.loadItemsTask.control = TaskControl.STOP
+    startLoadingSpinner(false)
+
+    m.loadItemsTask.view = string.EMPTY
+    m.loadItemsTask.itemId = m.top.parentItem.Id
+    m.loadItemsTask.itemType = m.top.mediaType
+    m.loadItemsTask.sortField = "SortName"
+    m.loadItemsTask.sortAscending = true
+    m.loadItemsTask.filter = "All"
+    m.loadItemsTask.filterOptions = {}
+    m.loadItemsTask.startIndex = 0
+    m.loadItemsTask.studioIds = string.EMPTY
+    m.loadItemsTask.genreIds = m.selectedGenreId
+    m.loadItemsTask.tagIds = string.EMPTY
+    m.loadItemsTask.tags = string.EMPTY
+    m.loadItemsTask.searchTerm = string.EMPTY
+    m.loadItemsTask.recursive = true
+    m.loadItemsTask.passToItem = { libraryID: m.top.parentItem.id }
+
+    m.loadItemsTask.control = TaskControl.RUN
+end sub
+
+sub loadGenresItems()
+    m.loadItemsTask.control = TaskControl.STOP
+    m.loadedRows = 0
+    m.loadedItems = 0
+
+    if isValid(m.cachedGenresContentNode)
+        m.data = m.cachedGenresContentNode
+        m.itemGrid.content = m.data
+        m.loadedItems = m.data.getChildCount()
+        m.itemGrid.opacity = 1.0
+        m.itemGrid.visible = true
+        m.itemGrid.vertFocusAnimationStyle = "fixed"
+
+        m.itemGrid.setFocus(true)
+        group = m.global.sceneManager.callFunc("getActiveScene")
+        if isValid(group) then group.lastFocus = m.itemGrid
+
+        stopLoadingSpinner()
+        hideLoadingStatusText()
+        scheduleGenresGridRestoreFocus()
+        return
+    end if
+
+    startLoadingSpinner(false)
+    m.data = CreateObject("roSGNode", "ContentNode")
+    m.itemGrid.content = m.data
+    m.loadItemsTask.view = "Genres"
+    m.loadItemsTask.itemId = m.top.parentItem.Id
+    m.loadItemsTask.itemType = string.EMPTY
+    m.loadItemsTask.sortField = "SortName"
+    m.loadItemsTask.sortAscending = true
+    m.loadItemsTask.filter = "All"
+    m.loadItemsTask.filterOptions = {}
+    m.loadItemsTask.startIndex = 0
+    m.loadItemsTask.studioIds = string.EMPTY
+    m.loadItemsTask.genreIds = string.EMPTY
+    m.loadItemsTask.tagIds = string.EMPTY
+    m.loadItemsTask.tags = string.EMPTY
+    m.loadItemsTask.searchTerm = string.EMPTY
+    m.loadItemsTask.recursive = false
+    m.loadItemsTask.passToItem = { libraryID: m.top.parentItem.id }
+    m.itemGrid.vertFocusAnimationStyle = "fixed"
+    m.loadItemsTask.control = TaskControl.RUN
+end sub
+
+sub ensureGenresRestoreTimer()
+    if isValid(m.genresRestoreTimer) then return
+    m.genresRestoreTimer = createObject("roSGNode", "Timer")
+    m.genresRestoreTimer.repeat = false
+    m.genresRestoreTimer.duration = 0.12
+    m.genresRestoreTimer.observeField("fire", "onGenresRestoreTimerFire")
+    m.top.appendChild(m.genresRestoreTimer)
+end sub
+
+sub scheduleGenresGridRestoreFocus()
+    if not isStringEqual(m.view, "Genres") then return
+    if (not isValidAndNotEmpty(m.genresExitRestoreTitle)) and m.genresExitRestoreIndex < 0
+        return
+    end if
+    ensureGenresRestoreTimer()
+    m.genresRestoreTimer.control = "stop"
+    m.genresRestoreTimer.control = "start"
+end sub
+
+sub onGenresRestoreTimerFire()
+    if not isValid(m.genresRestoreTimer) then return
+    m.genresRestoreTimer.control = "stop"
+
+    if not isStringEqual(m.view, "Genres")
+        m.genresExitRestoreTitle = ""
+        m.genresExitRestoreIndex = -1
+        return
+    end if
+    if not isValid(m.itemGrid) or not isValid(m.data)
+        m.genresExitRestoreTitle = ""
+        m.genresExitRestoreIndex = -1
+        return
+    end if
+
+    idx = -1
+    if isValidAndNotEmpty(m.genresExitRestoreTitle)
+        idx = findTagGridIndexByTitle(m.data, m.genresExitRestoreTitle)
+    end if
+    if idx < 0 and m.genresExitRestoreIndex >= 0 and m.genresExitRestoreIndex < m.data.getChildCount()
+        idx = m.genresExitRestoreIndex
+    end if
+
+    if idx >= 0
+        m.itemGrid.jumpToItem = idx
+        m.itemGrid.itemFocused = idx
+        m.itemGrid.setFocus(true)
+        grp = m.global.sceneManager.callFunc("getActiveScene")
+        if isValid(grp) then grp.lastFocus = m.itemGrid
+    end if
+
+    m.genresExitRestoreTitle = ""
+    m.genresExitRestoreIndex = -1
 end sub
 
 function findTagGridIndexByTitle(contentRoot as object, titleSearch as string) as integer
@@ -2698,6 +2850,27 @@ function onKeyEvent(key as string, press as boolean) as boolean
 
             ' Use dedicated loader â€” not loadInitialItems() which would reset view
             loadTagsItems()
+            return true
+        end if
+
+        if isStringEqual(m.view, "GenreDetails")
+            if isValid(m.global.reentryGuardActive) and m.global.reentryGuardActive = true
+                m.itemGrid.setFocus(true)
+                return true
+            end if
+
+            m.view = "Genres"
+            m.topBar.visible = true
+            m.selectedGenreId = ""
+
+            m.itemGrid.translation = [100, 0]
+            m.itemGrid.numRows = 5
+            m.itemGrid.vertFocusAnimationStyle = "fixed"
+            m.selectedItemOverview.visible = false
+            m.selectedItemName.visible = false
+            m.infoGroup.visible = false
+
+            loadGenresItems()
             return true
         end if
     end if

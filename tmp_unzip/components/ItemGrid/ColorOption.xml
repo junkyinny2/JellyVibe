@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="ColorOption" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="itemContentChanged" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/ItemGrid/ColorOption.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Rectangle id="backdrop" width="50" height="50" translation="[0,23]" />
+        <Text color="0x000000CC" id="checkmarkShadow" width="50" height="50" translation="[2,27]" font="font:MediumBoldSystemFont" horizAlign="center" vertAlign="center" text="✓" visible="false" />
+        <Text id="checkmark" width="50" height="50" translation="[0,25]" font="font:MediumBoldSystemFont" horizAlign="center" vertAlign="center" text="✓" visible="false" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./ColorOption.xml.map -->

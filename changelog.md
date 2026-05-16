@@ -8,6 +8,31 @@ Difference tracker between this fork and upstream Jellyfin Roku source.
 
 ---
 
+## Version 1.2.5 (2026-05-13)
+
+### Stream Dropdown Component
+- Created new `StreamDropdown.bs` / `.xml` component for video/audio stream selectors
+- Created `StreamDropdownItem.bs` / `.xml` for individual dropdown items
+- Purple theme styling matching JellyVibe branding
+- Dynamic width based on content
+- Scrollable list for long option lists
+
+### Movie Details Dropdown Fixes
+- Fixed purple theme on movie detail dropdowns
+- Added text centering for better readability
+- Dynamic width calculation based on content
+- Scrollable list for many options
+
+### Tags Menu Improvements
+- Added loading spinner and status text for Tags view
+- Added `includeItemTypes` filter to API query (Movie, Series, BoxSet)
+- Replaced O(n²) bubble sort with faster insertion sort
+- Removed debug print statements from tags processing
+- Clear cache on `loadTagsItems` to force fresh API calls
+- Show spinner in `reloadCategoryResults` for Tags view
+
+---
+
 ## Version 1.2.4 (2026-05-12)
 
 ### Bug Fixes

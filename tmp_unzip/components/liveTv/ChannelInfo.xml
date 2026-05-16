@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="ChannelInfo" extends="Group">
+    <interface>
+        <field id="content" type="node" onChange="contentChanged" />
+        <field id="width" type="integer" onChange="onWidthChanged" />
+        <field id="height" type="integer" onChange="onHeightChanged" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/liveTv/ChannelInfo.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/PosterLoadStatus.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Rectangle id="backdrop" />
+        <ScrollingText id="channelTitle" horizAlign="left" vertAlign="center" translation="[10, 0]" />
+        <Poster id="channelLogo" translation="[0, 0]" loadDisplayMode="scaleToFit" />
+        <Rectangle id="borderTop" height="1" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./ChannelInfo.xml.map -->

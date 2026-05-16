@@ -4,11 +4,17 @@ A feature-enhanced fork of the Jellyfin Roku client, rebranded as JellyVibe with
 
 ## Version
 
-Current Release: **1.2.4** (2026-05-12)
+Current Release: **1.2.5** (2026-05-13)
 
 ---
 
 ## Key Features
+
+### Stream Dropdown
+- **New StreamDropdown Component**: Dedicated component for video/audio stream selectors
+- **Purple Theme**: Matching JellyVibe branding with consistent styling
+- **Dynamic Width**: Auto-sizes based on content length
+- **Scrollable List**: Handles many options without overflow
 
 ### Focus System & Navigation
 - **Safe Zone Padding System**: Every grid item uses 6px translation padding to prevent focus clipping
@@ -35,6 +41,8 @@ Current Release: **1.2.4** (2026-05-12)
 - **Tag Filtering**: Click any tag to view a filtered movie list
 - **Optimized Loading**: Fast tag discovery with 100-item sampling
 - **Grid Default**: Tag-filtered results display in grid view by default
+- **Loading Feedback**: Spinner and status text during tag loading
+- **Optimized Queries**: Added `includeItemTypes` filter (Movie, Series, BoxSet)
 
 ### Playback Compatibility
 - **Triple Lie Playback Bypass** (Emby Mode): Stabilizes high-spec media playback

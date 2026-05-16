@@ -1,0 +1,14 @@
+'import "pkg:/source/api/baserequest.bs"
+'import "pkg:/source/api/Image.bs"
+'import "pkg:/source/api/Items.bs"
+'import "pkg:/source/utils/config.bs"
+'import "pkg:/source/utils/deviceCapabilities.bs"
+
+sub init()
+    m.top.functionName = "getImageURI"
+end sub
+
+sub getImageURI()
+    m.top.uri = getFirstEpisodeImage(m.top.seriesID, m.top.seasonID)
+end sub
+'//# sourceMappingURL=./GetFirstEpisodeImageTask.brs.map

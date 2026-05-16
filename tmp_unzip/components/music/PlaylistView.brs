@@ -1,0 +1,149 @@
+'import "pkg:/source/enums/ColorPalette.bs"
+'import "pkg:/source/enums/TaskControl.bs"
+'import "pkg:/source/utils/misc.bs"
+
+sub init()
+    m.top.optionsAvailable = false
+    m.getPlaylistDataTask = createObject("roSGNode", "GetPlaylistDataTask")
+    m.albumCover = m.top.findNode("albumCover")
+    m.playlist = m.top.findNode("playlist")
+    m.infoGroup = m.top.FindNode("infoGroup")
+    m.songListRect = m.top.FindNode("songListRect")
+    m.songListRect.color = "#020B2A"
+    m.playlist.focusBitmapBlendColor = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+    m.playlist.observeField("doneLoading", "onDoneLoading")
+    m.dscr = m.top.findNode("overview")
+    m.dscr.ellipsisText = tr("... (Press * to read more)")
+end sub
+
+' Set values for displayed values on screen
+sub pageContentChanged()
+    item = m.top.pageContent
+    if not isValidAndNotEmpty(item) then
+        return
+    end if
+    title = m.top.findNode("title")
+    if isValid(title)
+        title.font.size = 60
+        title.text = item.title
+    end if
+    setPosterImage(item.posterURL)
+    setOnScreenTextValues(item.json)
+end sub
+
+' Set poster image on screen
+sub setPosterImage(posterURL)
+    if isValid(posterURL)
+        m.albumCover.uri = posterURL
+    end if
+end sub
+
+' Adjust scene by removing overview node and showing more songs
+sub adjustScreenForNoOverview()
+    m.infoGroup.removeChild(m.dscr)
+    m.songListRect.height = 800
+    m.playlist.numRows = 7
+end sub
+
+' Populate on screen text variables
+sub setOnScreenTextValues(json)
+    if not isValid(json) then
+        return
+    end if
+    if isValidAndNotEmpty(json.overview)
+        ' We have overview text
+        setFieldTextValue("overview", json.overview)
+    else
+        ' We don't have overview text
+        adjustScreenForNoOverview()
+    end if
+    setFieldTextValue("numberofsongs", (bslib_toString(json.ChildCount) + " items"))
+    if isStringEqual(type(json.ProductionYear), "roInt")
+        setFieldTextValue("released", ("Released " + bslib_toString(json.ProductionYear)))
+    end if
+    if isStringEqual(type(json.RunTimeTicks), "LongInteger")
+        setFieldTextValue("runtime", (bslib_toString(getMinutes(json.RunTimeTicks)) + " mins"))
+    end if
+end sub
+
+sub OnScreenShown()
+    if isValid(m.top.lastFocus)
+        m.top.lastFocus.setFocus(true)
+        group = m.global.sceneManager.callFunc("getActiveScene")
+        group.lastFocus = m.top.lastFocus
+    else
+        m.playlist.setFocus(true)
+        group = m.global.sceneManager.callFunc("getActiveScene")
+        group.lastFocus = m.playlist
+    end if
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then
+        return false
+    end if
+    if key = "options"
+        selectedItem = m.playlist.content.getChild(m.playlist.itemFocused)
+        if not isValid(selectedItem) then
+            return true
+        end if
+        confirmPlaylistAccess(m.top.pageContent.LookupCI("id"), selectedItem.LookupCI("id"), selectedItem.LookupCI("title"))
+        return true
+    end if
+    return false
+end function
+
+sub createFullDscrDlg()
+    if isAllValid([
+        m.top.overhangTitle
+        m.dscr.text
+    ])
+        m.global.sceneManager.callFunc("standardDialog", m.top.overhangTitle, {
+            data: [
+                "<p>" + m.dscr.text + "</p>"
+            ]
+        })
+    end if
+end sub
+
+sub onDoneLoading()
+    m.playlist.unobservefield("doneLoading")
+    stopLoadingSpinner()
+end sub
+
+sub confirmPlaylistAccess(playlistID as string, selectedItemID as string, selectedItemTitle as string)
+    m.getPlaylistDataTask.observeFieldScoped("playlistData", "onPlaylistDataLoaded")
+    m.getPlaylistDataTask.playlistID = playlistID
+    m.getPlaylistDataTask.selectedItemID = selectedItemID
+    m.getPlaylistDataTask.selectedItemTitle = selectedItemTitle
+    m.getPlaylistDataTask.control = "RUN"
+end sub
+
+sub onPlaylistDataLoaded()
+    m.getPlaylistDataTask.unobserveFieldScoped("playlistData")
+    ' Confirm data is valid
+    if not isValidAndNotEmpty(m.getPlaylistDataTask.playlistData) then
+        return
+    end if
+    if not isChainValid(m.getPlaylistDataTask.playlistData, "canedit") then
+        return
+    end if
+    ' Confirm user has edit permissions
+    if not chainLookup(m.getPlaylistDataTask.playlistData, "canedit") then
+        return
+    end if
+    popupData = [
+        tr("Remove From Playlist")
+    ]
+    m.global.sceneManager.callFunc("optionDialog", "playlist", (function(m, tr)
+            __bsConsequent = m.getPlaylistDataTask.LookupCI("selectedItemTitle")
+            if __bsConsequent <> invalid then
+                return __bsConsequent
+            else
+                return tr("Options")
+            end if
+        end function)(m, tr), [], popupData, {
+        id: m.getPlaylistDataTask.LookupCI("selectedItemID")
+    })
+end sub
+'//# sourceMappingURL=./PlaylistView.brs.map

@@ -1,0 +1,383 @@
+'import "pkg:/source/enums/ColorPalette.bs"
+'import "pkg:/source/utils/controlStyle.bs"
+
+sub init()
+    if not isValid(m.top.iconSide) or m.top.iconSide = ""
+        m.top.iconSide = "left"
+    end if
+    m.buttonBackground = m.top.findNode("buttonBackground")
+    m.buttonBorder = m.top.findNode("buttonBorder")
+    m.buttonIcon = m.top.findNode("buttonIcon")
+    m.buttonText = m.top.findNode("buttonText")
+    m.buttonTextScrolling = m.top.findNode("buttonTextScrolling")
+    m.scrollDelayTimer = m.top.findNode("scrollDelayTimer")
+    if isValid(m.scrollDelayTimer)
+        m.scrollDelayTimer.observeField("fire", "onScrollTimerFire")
+    end if
+    m.top.observeField("background", "onBackgroundChanged")
+    m.top.observeField("textColor", "onTextColorChanged")
+    m.top.observeField("icon", "onIconChanged")
+    m.top.observeField("iconSide", "onIconSideChanged")
+    m.top.observeField("fontSize", "onFontSizeChanged")
+    m.top.observeField("text", "onTextChanged")
+    m.top.observeField("height", "onHeightChanged")
+    m.top.observeField("width", "onWidthChanged")
+    m.top.observeField("padding", "onPaddingChanged")
+    m.top.observeField("focus", "onFocusChanged")
+    m.top.observeField("focusedChild", "onFocusChanged")
+    m.top.observeField("disabled", "onDisabledChanged")
+    m.top.observeField("iconBlendColor", "onIconBlendColorChanged")
+    m.top.observeField("enableBorder", "onBorderSettingChanged")
+    m.top.observeField("bold", "onBoldChanged")
+    applyButtonTheme()
+    m.buttonText.text = m.top.text
+    onFontSizeChanged()
+    onBoldChanged()
+    syncButtonSize()
+    onIconChanged()
+    onIconBlendColorChanged()
+    applyVisualState()
+end sub
+
+sub onBoldChanged()
+    if m.top.bold
+        m.buttonText.font = "font:MediumBoldSystemFont"
+        if isValid(m.buttonTextScrolling) then
+            m.buttonTextScrolling.font = "font:MediumBoldSystemFont"
+        end if
+    else
+        m.buttonText.font = "font:MediumSystemFont"
+        if isValid(m.buttonTextScrolling) then
+            m.buttonTextScrolling.font = "font:MediumSystemFont"
+        end if
+    end if
+    onFontSizeChanged()
+end sub
+
+sub applyButtonTheme()
+    if isValid(m.buttonBorder)
+        m.buttonBorder.visible = isJellyRockControlStyle() and m.top.enableBorder
+    end if
+end sub
+
+function hasButtonFocus() as boolean
+    if m.top.focus = true then
+        return true
+    end if
+    if m.top.hasFocus() then
+        return true
+    end if
+    return m.top.isInFocusChain()
+end function
+
+function getResolvedFocusFill() as dynamic
+    if isJellyRockControlStyle()
+        return getControlFocusBackground(m.top.focusBackground)
+    end if
+    return m.top.focusBackground
+end function
+
+function getResolvedFocusBorder() as dynamic
+    if isJellyRockControlStyle()
+        return getControlAccentColor(m.top.focusBorder)
+    end if
+    if m.top.focusBorder <> invalid and m.top.focusBorder <> "" then
+        return m.top.focusBorder
+    end if
+    return m.top.focusBackground
+end function
+
+function getResolvedFocusTextColor() as dynamic
+    if isJellyRockControlStyle()
+        ' Respect an explicitly set focusTextColor override
+        ftc = m.top.focusTextColor
+        ftcType = type(ftc)
+        if (ftcType = "roString" or ftcType = "String") and ftc <> ""
+            return ftc
+        end if
+        if ftcType = "roInt" or ftcType = "Integer" or ftcType = "roInteger"
+            if ftc <> 0 then
+                return ftc
+            end if
+        end if
+        return "#000000"
+    end if
+    return m.top.focusTextColor
+end function
+
+sub onTextColorChanged()
+    applyVisualState()
+end sub
+
+sub onFontSizeChanged()
+    if m.top.fontSize > 0
+        m.buttonText.font.size = m.top.fontSize
+        if isValid(m.buttonTextScrolling) and isValid(m.buttonTextScrolling.font)
+            m.buttonTextScrolling.font.size = m.top.fontSize
+        end if
+    end if
+    setIconSize()
+end sub
+
+sub onIconSideChanged()
+    setIconSize()
+end sub
+
+sub onFocusChanged()
+    if m.top.disabled
+        applyVisualState()
+        return
+    end if
+    applyVisualState()
+    if isValid(m.scrollDelayTimer)
+        if hasButtonFocus()
+            m.scrollDelayTimer.duration = m.top.scrollDelay
+            m.scrollDelayTimer.control = "start"
+        else
+            m.scrollDelayTimer.control = "stop"
+            ' Reset to normal text when focus is lost
+            m.buttonText.visible = true
+            m.buttonTextScrolling.visible = false
+        end if
+    end if
+end sub
+
+sub onScrollTimerFire()
+    if hasButtonFocus() and isValid(m.buttonText) and m.top.text <> ""
+        m.buttonText.visible = false
+        m.buttonTextScrolling.text = m.top.text
+        m.buttonTextScrolling.visible = true
+    end if
+end sub
+
+sub applyVisualState()
+    if m.buttonBackground = invalid or m.buttonText = invalid then
+        return
+    end if
+    applyButtonTheme()
+    focused = hasButtonFocus()
+    if m.top.disabled
+        m.buttonBackground.blendColor = "#777777"
+        if isValid(m.buttonBorder)
+            m.buttonBorder.blendColor = "#777777"
+        end if
+        m.buttonText.color = "#101010"
+        if isValid(m.buttonIcon)
+            m.buttonIcon.blendColor = "#101010"
+        end if
+        return
+    end if
+    if focused
+        m.buttonText.color = getResolvedFocusTextColor()
+        m.buttonBackground.blendColor = getResolvedFocusFill()
+        if m.top.focusIcon <> "" then
+            m.buttonIcon.uri = m.top.focusIcon
+        else
+            m.buttonIcon.uri = m.top.icon
+        end if
+        if isValid(m.buttonIcon)
+            fColor = m.top.focusIconBlendColor
+            if type(fColor) = "roString" or type(fColor) = "String"
+                if (fColor <> "") then
+                    m.buttonIcon.blendColor = fColor
+                else
+                    m.buttonIcon.blendColor = m.top.iconBlendColor
+                end if
+            else if type(fColor) = "roInt" or type(fColor) = "Integer" or type(fColor) = "roInteger"
+                if (fColor <> 0) then
+                    m.buttonIcon.blendColor = fColor
+                else
+                    m.buttonIcon.blendColor = m.top.iconBlendColor
+                end if
+            else
+                m.buttonIcon.blendColor = m.top.iconBlendColor
+            end if
+        end if
+    else
+        m.buttonText.color = m.top.textColor
+        m.buttonBackground.blendColor = m.top.background
+        m.buttonIcon.uri = m.top.icon
+        if isValid(m.buttonIcon)
+            m.buttonIcon.blendColor = m.top.iconBlendColor
+        end if
+    end if
+    if isValid(m.buttonBorder)
+        if m.buttonBorder.visible and focused
+            m.buttonBorder.blendColor = getResolvedFocusBorder()
+        else
+            m.buttonBorder.blendColor = m.top.background
+        end if
+    end if
+end sub
+
+sub onDisabledChanged()
+    applyVisualState()
+end sub
+
+sub onBackgroundChanged()
+    applyVisualState()
+end sub
+
+sub onBorderSettingChanged()
+    applyButtonTheme()
+    applyVisualState()
+end sub
+
+sub onIconChanged()
+    m.buttonIcon.uri = m.top.icon
+    setIconSize()
+    applyVisualState()
+end sub
+
+sub onIconBlendColorChanged()
+    applyVisualState()
+end sub
+
+sub onTextChanged()
+    m.buttonText.text = m.top.text
+    if m.top.fontSize > 0
+        m.buttonText.font.size = m.top.fontSize
+    end if
+    setIconSize()
+end sub
+
+sub syncButtonSize()
+    buttonWidth = m.top.width
+    buttonHeight = m.top.height
+    if not isValid(buttonWidth) or buttonWidth <= 0
+        buttonWidth = m.buttonBackground.width
+    end if
+    if not isValid(buttonHeight) or buttonHeight <= 0
+        buttonHeight = m.buttonBackground.height
+    end if
+    if buttonWidth > 0
+        ' JellyRock port: keep the border poster sized exactly to the background so the outline wraps the full pill.
+        m.buttonBackground.width = buttonWidth
+        if isValid(m.buttonBorder) then
+            m.buttonBorder.width = buttonWidth
+        end if
+        m.buttonText.width = buttonWidth
+    end if
+    if buttonHeight > 0
+        m.buttonBackground.height = buttonHeight
+        if isValid(m.buttonBorder) then
+            m.buttonBorder.height = buttonHeight
+        end if
+        m.buttonText.height = buttonHeight
+    end if
+end sub
+
+sub setIconSize()
+    height = m.buttonBackground.height
+    width = m.buttonBackground.width
+    if height > 0 and width > 0
+        padding = m.top.padding
+        if not isValid(padding) or padding < 0 then
+            padding = 18
+        end if
+        hasIcon = (m.top.icon <> "")
+        hasText = (isValid(m.top.text) and m.top.text <> "")
+        m.buttonIcon.visible = hasIcon
+        if hasIcon and not hasText
+            ' Icon-only: center the icon inside the full button with equal padding
+            iconSize = height - (padding * 2)
+            if iconSize < 8 then
+                iconSize = 8
+            end if
+            m.buttonIcon.width = iconSize
+            m.buttonIcon.height = iconSize
+            m.buttonIcon.translation = [
+                ((width - iconSize) / 2)
+                ((height - iconSize) / 2)
+            ]
+            m.buttonText.height = 0
+            m.buttonText.width = 0
+            return
+        end if
+        m.buttonIcon.height = m.top.height
+        m.buttonText.height = m.top.height
+        if padding > 0
+            m.buttonIcon.height = m.buttonIcon.height - padding
+        end if
+        m.buttonIcon.width = m.buttonIcon.height
+        ' Icon + text layout
+        if LCase(m.top.iconSide) = "right"
+            if hasIcon
+                m.buttonIcon.translation = [
+                    m.buttonBackground.width - padding - m.buttonIcon.width
+                    ((height - m.buttonIcon.height) / 2)
+                ]
+                m.buttonText.translation = [
+                    padding
+                    0
+                ]
+            else
+                m.buttonText.translation = [
+                    padding
+                    0
+                ]
+            end if
+        else
+            if hasIcon
+                m.buttonIcon.translation = [
+                    padding
+                    ((height - m.buttonIcon.height) / 2)
+                ]
+                m.buttonText.translation = [
+                    padding + m.buttonIcon.width + 20
+                    0
+                ]
+            else
+                m.buttonText.translation = [
+                    padding
+                    0
+                ]
+            end if
+        end if
+        if hasIcon
+            iconTextGap = width - padding - m.buttonIcon.width - 40
+            if (iconTextGap > 0) then
+                m.buttonText.width = iconTextGap
+            else
+                m.buttonText.width = 0
+            end if
+        else
+            m.buttonText.width = width - (padding * 2)
+        end if
+        if isValid(m.buttonTextScrolling)
+            m.buttonTextScrolling.maxWidth = m.buttonText.width
+            m.buttonTextScrolling.height = m.buttonText.height
+            m.buttonTextScrolling.translation = m.buttonText.translation
+        end if
+    end if
+end sub
+
+sub onHeightChanged()
+    syncButtonSize()
+    setIconSize()
+    applyVisualState()
+end sub
+
+sub onWidthChanged()
+    syncButtonSize()
+    setIconSize()
+    applyVisualState()
+end sub
+
+sub onPaddingChanged()
+    setIconSize()
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then
+        return false
+    end if
+    if key = "right" and hasButtonFocus()
+        m.top.escape = "right"
+    end if
+    if key = "left" and hasButtonFocus()
+        m.top.escape = "left"
+    end if
+    return false
+end function
+'//# sourceMappingURL=./TextButton.brs.map

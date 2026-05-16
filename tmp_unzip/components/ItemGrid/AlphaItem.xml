@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="AlphaItem" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="showContent" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/ItemGrid/AlphaItem.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Text translation="[0, 7]" height="25" width="35" id="letterText" font="font:SmallestSystemFont" horizAlign="center" vertAlign="center" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./AlphaItem.xml.map -->

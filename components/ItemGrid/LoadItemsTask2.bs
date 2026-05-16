@@ -132,6 +132,7 @@ sub loadItems()
     else if isStringEqual(m.top.view, "Genres")
         url = "Genres"
         params.append({ UserId: m.global.session.user.id, includeItemTypes: m.top.itemType })
+        params.append({ "Fields": "Overview,ImageTags,PrimaryImageAspectRatio" })
     else if LCase(m.top.view) = "tags"
         url = "Items"
         ' Query items to collect tags - high limit for full coverage
@@ -214,6 +215,161 @@ sub loadItems()
             UserId: m.global.session.user.id
         })
         url = "Items"
+    end if
+
+    ' Handle Folders filter - show movies with folder name as title
+    if LCase(m.top.filter) = "folders"
+        movieResp = APIRequest("Items", {
+            "userId": m.global.session.user.id,
+            "parentId": m.top.itemId,
+            "includeItemTypes": "Movie",
+            "Limit": 500,
+            "StartIndex": 0,
+            "SortBy": "SortName",
+            "SortOrder": "Ascending",
+            "Fields": "ImageTags,Path"
+        })
+        movieData = getJson(movieResp)
+
+        if isValid(movieData) and isValid(movieData.Items)
+            if isValid(movieData.TotalRecordCount) then m.top.totalRecordCount = movieData.TotalRecordCount
+
+            for each item in movieData.Items
+                tmp = CreateObject("roSGNode", "MovieData")
+                tmp.json = item
+                tmp.id = item.id
+                tmp.type = "Movie"
+
+                ' Extract folder name from Path (second-to-last segment)
+                ' e.g., /movies/MyFolder/file.mkv -> MyFolder
+                folderName = ""
+                if isValid(item.Path) and item.Path <> ""
+                    pathStr = item.Path
+                    ' Find last two "/" separators
+                    lastSep = 0
+                    prevSep = 0
+                    searchStart = 1
+                    while searchStart < pathStr.Len()
+                        found = Instr(searchStart, pathStr, "/")
+                        if found = 0 then exit while
+                        prevSep = lastSep
+                        lastSep = found
+                        searchStart = found + 1
+                    end while
+                    if prevSep > 0
+                        folderName = Mid(pathStr, prevSep + 1, lastSep - prevSep - 1)
+                    end if
+                end if
+
+                if folderName = "" then folderName = item.Name
+
+                tmp.title = folderName
+                tmp.Title = folderName
+
+                if isValid(item.ImageTags) and isValid(item.ImageTags.Primary)
+                    tmp.posterUrl = api.items.GetImageURL(item.Id, "Primary", 0, { "maxWidth": 270, "maxHeight": 400 })
+                end if
+
+                results.push(tmp)
+            end for
+        end if
+        m.top.content = results
+        return
+    end if
+
+    ' Handle Trailers filter
+    if LCase(m.top.filter) = "trailers"
+        trailerParams = {
+            "userId": m.global.session.user.id,
+            "Limit": m.top.limit,
+            "StartIndex": m.top.startIndex,
+            "Fields": "Overview,PrimaryImageAspectRatio,ImageTags"
+        }
+        trailerResp = api.trailers.Get(trailerParams)
+        if isValid(trailerResp) and isValid(trailerResp.Items)
+            if isValid(trailerResp.TotalRecordCount) then m.top.totalRecordCount = trailerResp.TotalRecordCount
+            for each item in trailerResp.Items
+                tmp = CreateObject("roSGNode", "MovieData")
+                tmp.json = item
+                tmp.id = item.id
+                tmp.title = item.Name
+                tmp.Title = item.Name
+                tmp.type = "Movie"
+                if isValid(item.ImageTags) and isValid(item.ImageTags.Primary)
+                    tmp.posterUrl = api.items.GetImageURL(item.id, "Primary", 0, { "maxWidth": 270, "maxHeight": 400 })
+                end if
+                results.push(tmp)
+            end for
+        end if
+        m.top.content = results
+        return
+    end if
+
+    ' Handle Playlists filter
+    if LCase(m.top.filter) = "playlists"
+        playlistParams = {
+            "userId": m.global.session.user.id,
+            "parentId": m.top.itemId,
+            "includeItemTypes": "Playlist",
+            "Limit": m.top.limit,
+            "StartIndex": m.top.startIndex,
+            "SortBy": "SortName",
+            "SortOrder": "Ascending",
+            "Fields": "Overview,PrimaryImageAspectRatio,ImageTags",
+            "recursive": true
+        }
+        playlistResp = APIRequest("Items", playlistParams)
+        playlistData = getJson(playlistResp)
+        if isValid(playlistData) and isValid(playlistData.Items)
+            if isValid(playlistData.TotalRecordCount) then m.top.totalRecordCount = playlistData.TotalRecordCount
+            for each item in playlistData.Items
+                tmp = CreateObject("roSGNode", "MovieData")
+                tmp.json = item
+                tmp.id = item.id
+                tmp.title = item.Name
+                tmp.Title = item.Name
+                tmp.type = "Playlist"
+                if isValid(item.ImageTags) and isValid(item.ImageTags.Primary)
+                    tmp.posterUrl = api.items.GetImageURL(item.id, "Primary", 0, { "maxWidth": 270, "maxHeight": 400 })
+                end if
+                results.push(tmp)
+            end for
+        end if
+        m.top.content = results
+        return
+    end if
+
+    ' Handle Collections filter
+    if LCase(m.top.filter) = "collections"
+        collectionParams = {
+            "userId": m.global.session.user.id,
+            "parentId": m.top.itemId,
+            "includeItemTypes": "BoxSet",
+            "Limit": m.top.limit,
+            "StartIndex": m.top.startIndex,
+            "SortBy": "SortName",
+            "SortOrder": "Ascending",
+            "Fields": "Overview,PrimaryImageAspectRatio,ImageTags",
+            "recursive": true
+        }
+        collectionResp = APIRequest("Items", collectionParams)
+        collectionData = getJson(collectionResp)
+        if isValid(collectionData) and isValid(collectionData.Items)
+            if isValid(collectionData.TotalRecordCount) then m.top.totalRecordCount = collectionData.TotalRecordCount
+            for each item in collectionData.Items
+                tmp = CreateObject("roSGNode", "CollectionData")
+                tmp.json = item
+                tmp.id = item.id
+                tmp.title = item.Name
+                tmp.type = "BoxSet"
+                if isValid(item.ImageTags) and isValid(item.ImageTags.Primary)
+                    tmp.posterUrl = api.items.GetImageURL(item.id, "Primary", 0, { "maxWidth": 270, "maxHeight": 400 })
+                end if
+                results.push(tmp)
+            end for
+        end if
+        m.top.content = results
+        return
     end if
 
     resp = APIRequest(url, params)
@@ -409,74 +565,39 @@ sub loadItems()
                 else if LCase(itemType) = "recording"
                     tmp = CreateObject("roSGNode", "RecordingData")
                 else if itemType = "Genre"
-                    itemLimit = 7
-                    if m.top.numberOfColumns <> invalid then itemLimit = m.top.numberOfColumns
-
-                    tmp = CreateObject("roSGNode", "ContentNode")
+                    tmp = CreateObject("roSGNode", "FolderData")
                     tmp.title = item.name
+                    tmp.id = item.id
+                    tmp.type = "Genre"
 
-                    genreData = api.items.Get({
-                        UserId: m.global.session.user.id,
-                        SortBy: "Random",
-                        SortOrder: "Ascending",
-                        IncludeItemTypes: m.top.itemType,
-                        Recursive: true,
-                        Fields: "PrimaryImageAspectRatio,MediaSourceCount,BasicSyncInfo",
-                        ImageTypeLimit: 1,
-                        EnableImageTypes: "Primary",
-                        Limit: itemLimit,
-                        GenreIds: item.id,
-                        EnableTotalRecordCount: false,
-                        ParentId: m.top.itemId
-                    })
-
-                    if genreData.Items.Count() > (itemLimit - 2)
-                        ' Add View All item to the start of the row
-                        row = tmp.createChild("FolderData")
-
-                        row.libraryID = m.top.genreIds
-                        row.parentFolder = m.top.itemId
-                        row.id = m.top.itemId
-                        row.title = tr("View All") + " " + item.name
-                        item.name = tr("View All") + " " + item.name
-                        row.json = item
-                        row.type = "Folder"
-                        row.itemType = m.top.itemType
-
-                        if LCase(m.top.itemType) = "movie"
-                            genreItemImage = api.items.GetImageURL(item.id)
-                        else
-                            genreItemImage = invalid
-                            row.posterURL = invalid
+                    ' Get sample poster from genre's own ImageTags or fetch a sample item
+                    genrePoster = ""
+                    if isValid(item.ImageTags) and isValid(item.ImageTags.Primary)
+                        genrePoster = api.items.GetImageURL(item.id, "Primary", 0, { "maxWidth": 270, "maxHeight": 400 })
+                    else
+                        sampleParams = {
+                            UserId: m.global.session.user.id,
+                            IncludeItemTypes: m.top.itemType,
+                            Recursive: true,
+                            Limit: 1,
+                            Fields: "ImageTags",
+                            GenreIds: item.id
+                        }
+                        sampleResp = APIRequest("Items", sampleParams)
+                        sampleData = getJson(sampleResp)
+                        if isValid(sampleData) and isValid(sampleData.Items) and sampleData.Items.Count() > 0
+                            firstItem = sampleData.Items[0]
+                            if isValid(firstItem.ImageTags) and isValid(firstItem.ImageTags.Primary)
+                                genrePoster = api.items.GetImageURL(firstItem.Id, "Primary", 0, { "maxWidth": 270, "maxHeight": 400 })
+                            end if
                         end if
-
-                        row.FHDPOSTERURL = genreItemImage
-                        row.HDPOSTERURL = genreItemImage
-                        row.SDPOSTERURL = genreItemImage
-
-                        genreData.Items.Pop()
                     end if
 
-                    for each genreItem in genreData.Items
-                        if LCase(m.top.itemType) = "movie"
-                            row = tmp.createChild("MovieData")
-                        else
-                            row = tmp.createChild("SeriesData")
-                        end if
+                    if genrePoster <> "" then tmp.posterUrl = genrePoster
 
-                        genreItemImage = api.items.GetImageURL(genreItem.id)
-                        row.title = genreItem.name
-                        row.FHDPOSTERURL = genreItemImage
-                        row.HDPOSTERURL = genreItemImage
-                        row.SDPOSTERURL = genreItemImage
-
-                        genreItem.AddReplace("passedData", m.top.passToItem)
-
-                        row.json = genreItem
-
-                        row.id = genreItem.id
-                        row.type = genreItem.type
-                    end for
+                    tagJson = { name: item.name, id: item.id, type: "Genre" }
+                    tmp.parentFolder = m.top.itemId
+                    tmp.json = tagJson
 
                 else if itemType = "Tag" or isStringEqual(m.top.view, "Tags")
                     tmp = CreateObject("roSGNode", "FolderData")

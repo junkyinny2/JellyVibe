@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TVSeasonData" extends="ContentNode">
+    <interface>
+        <field id="id" type="string" />
+        <field id="title" type="string" />
+        <field id="image" type="node" onChange="setPoster" />
+        <field id="posterURL" type="string" />
+        <field id="overview" type="string" />
+        <field id="type" type="string" />
+        <field id="quickplayFromResume" type="boolean" />
+        <field id="json" type="assocarray" onChange="setFields" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/data/TVSeasonData.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ItemType.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+</component>
+<!--//# sourceMappingURL=./TVSeasonData.xml.map -->

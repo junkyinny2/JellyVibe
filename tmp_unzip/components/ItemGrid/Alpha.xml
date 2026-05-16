@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="Alpha" extends="Group">
+    <interface>
+        <field id="wrap" type="boolean" value="true" />
+        <field id="letterSelected" type="string" alwaysNotify="true" />
+        <function name="setDisplay" />
+        <function name="getDisplay" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/ItemGrid/Alpha.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/controlStyle.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/KeyCode.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/AnimationState.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/AnimationControl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <MarkupList id="alphaMenu" translation="[50, 160]" itemComponentName="AlphaItem" vertFocusAnimationStyle="floatingFocus" itemSpacing="[0,0]" itemSize="[35,30]" numRows="27" drawFocusFeedback="true" focusBitmapUri="pkg:/images/white.png" focusFootprintBitmapUri="">
+            <ContentNode id="alphaText" role="content">
+                <ContentNode title="#" />
+                <ContentNode title="A" />
+                <ContentNode title="B" />
+                <ContentNode title="C" />
+                <ContentNode title="D" />
+                <ContentNode title="E" />
+                <ContentNode title="F" />
+                <ContentNode title="G" />
+                <ContentNode title="H" />
+                <ContentNode title="I" />
+                <ContentNode title="J" />
+                <ContentNode title="K" />
+                <ContentNode title="L" />
+                <ContentNode title="M" />
+                <ContentNode title="N" />
+                <ContentNode title="O" />
+                <ContentNode title="P" />
+                <ContentNode title="Q" />
+                <ContentNode title="R" />
+                <ContentNode title="S" />
+                <ContentNode title="T" />
+                <ContentNode title="U" />
+                <ContentNode title="V" />
+                <ContentNode title="W" />
+                <ContentNode title="X" />
+                <ContentNode title="Y" />
+                <ContentNode title="Z" />
+            </ContentNode>
+        </MarkupList>
+        <Animation id="toggleDisplayAnimation" duration=".5" repeat="false" easeFunction="linear">
+            <FloatFieldInterpolator id="displayOpacity" key="[0.0, 1.0]" keyValue="[1.00, 0.00]" fieldToInterp="alphaMenu.opacity" />
+            <Vector2DFieldInterpolator id="displayTranslation" key="[0.1, .9]" keyValue="[[50, 160], [-50, 160]]" fieldToInterp="alphaMenu.translation" />
+        </Animation>
+    </children>
+</component>
+<!--//# sourceMappingURL=./Alpha.xml.map -->

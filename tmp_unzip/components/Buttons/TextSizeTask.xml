@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TextSizeTask" extends="Task">
+    <interface>
+        <field id="fontName" type="string" />
+        <field id="fontSize" type="integer" />
+        <field id="text" type="array" />
+        <field id="maxWidth" type="integer" value="1920" />
+        <field id="name" type="string" />
+        <field id="width" type="array" />
+        <field id="height" type="integer" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/Buttons/TextSizeTask.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+</component>
+<!--//# sourceMappingURL=./TextSizeTask.xml.map -->

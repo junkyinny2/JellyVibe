@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="AlbumData" extends="ContentNode">
+    <interface>
+        <field id="id" type="string" />
+        <field id="title" type="string" />
+        <field id="json" type="assocarray" onChange="setFields" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/data/AlbumData.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+</component>
+<!--//# sourceMappingURL=./AlbumData.xml.map -->

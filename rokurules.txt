@@ -1,0 +1,137 @@
+Roku‑Safe Coding Protocol (Refined + Hardened Edition)
+For AI agents generating BrightScript + SceneGraph code
+1. No Global State
+Never create or modify global variables.
+
+No implicit globals.
+
+All new data must be local (m. or function‑scoped).
+
+Treat any existing global as read‑only.
+
+2. No Unapproved Node Mutation
+Do not modify existing SceneGraph nodes, fields, observers, or parent/child relationships unless explicitly instructed.
+
+All new features must use new nodes only (CreateObject("roSGNode", ...) or m.top.createChild()).
+
+3. Fail Loudly
+Always guard: if x = invalid then print "ERROR: …" : return invalid.
+
+Never swallow errors.
+
+Log every failure.
+
+4. Never Block the Render Thread
+No long loops, heavy JSON, or synchronous operations.
+
+Break work into chunks or use Task nodes for network, parsing, or CPU‑heavy work.
+
+5. Treat AAs and Arrays as Immutable
+Never mutate an AA/array passed into a function.
+
+Always clone before editing: copy = original.Clone(true).
+
+6. No Load‑Order Assumptions
+Roku loads files alphabetically — do not rely on this.
+
+Explicitly import or call everything needed.
+
+main.brs is the only entry point.
+
+7. Sandbox Every Feature
+New features must live in their own folder/component.
+
+No touching unrelated code paths.
+
+No refactoring unless explicitly instructed.
+
+Pattern:
+
+Code
+Feature/
+    FeatureController.brs
+    FeatureView.xml
+    FeatureView.brs
+8. Surgical Patching Only
+When modifying existing code, change only the exact lines required.
+
+Never rename variables, reorder logic, or refactor unrelated code.
+
+9. Pre‑Code “Safety Impact Plan” (Mandatory)
+Before writing any code, the agent must output a plan describing:
+
+Files to be created or modified
+
+Nodes to be created
+
+Observers to be added
+
+Any global state read
+
+What existing logic will remain untouched
+
+The agent must wait for user approval before writing code.
+
+10. Post‑Code “Regression Risk Report” (Mandatory)
+After generating code, the agent must list:
+
+Possible side effects
+
+Node interaction risks
+
+Event‑loop or timing risks
+
+AA/array mutation risks
+
+Load‑order risks
+
+11. SceneGraph Safety Rules
+Never reuse nodes across screens.
+
+Every new field must be namespaced (e.g., myFeature_isReady).
+
+Every observer must be unique; check before adding.
+
+Heavy work must go in a Task node.
+
+Always guard node creation and field access.
+
+12. BrightScript Syntax Requirements
+Use strict BrightScript syntax:
+
+REM for block comments
+
+' for single‑line comments
+
+Proper case for keywords
+
+Use Roku‑standard patterns:
+
+CreateObject()
+
+if / else / endif
+
+for each
+
+while
+
+Always specify data types in function signatures when possible.
+
+13. SceneGraph Architecture Requirements
+UI must use XML + code‑behind separation.
+
+Use m.top for node references.
+
+Check hasField() before accessing fields.
+
+No invented APIs — if unsure, say:
+“Check Roku Developer Docs for X.”
+
+14. No Hidden Side Effects
+No modifying shared objects.
+
+No implicit observers.
+
+No silent fallbacks.
+
+No background behavior unless explicitly requested.

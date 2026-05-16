@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TVSeriesDetails" extends="JFScreen">
+    <interface>
+        <field id="buttonSelected" type="string" alwaysNotify="true" />
+        <field id="itemContent" type="node" onChange="itemContentChanged" />
+        <field id="seasonData" type="node" onChange="onSeasonDataChanged" />
+        <field id="displayResumeButton" type="bool" value="true" onChange="onDisplayResumeButtonChange" />
+        <field id="selectedButtonIndex" type="integer" value="-1" />
+        <field id="quickPlayNode" type="node" alwaysNotify="true" />
+        <field id="playSeriesFromStart" type="bool" alwaysNotify="true" />
+        <field id="refreshSeasonDetailsData" type="bool" alwaysNotify="true" />
+        <field id="resumeTicks" type="longinteger" value="0" onChange="onResumeTicksChange" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/tvshows/TVSeriesDetails.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/deviceCapabilities.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/CompatibilityBypass.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/sdk.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/PlaybackMethod.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ViewLoadStatus.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/PosterLoadStatus.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/KeyCode.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/AnimationState.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/AnimationControl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/constants/HomeRowItemSizes.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/Items.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/SubtitleSelection.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/Image.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ImageType.brs" />
+    <children>
+        <Clock translation="[1720, 40]" />
+        <Group id="detailsGroup">
+            <Group id="mainContent" translation="[100, 50]">
+                <ScrollingText id="title" horizAlign="left" font="font:LargeBoldSystemFont" maxWidth="1100" height="70" />
+                <LayoutGroup id="topLevelDetails" layoutDirection="horiz" itemSpacings="[18]" translation="[0, 80]">
+                    <LayoutGroup id="runtimeContainer" layoutDirection="horiz" itemSpacings="[8]">
+                        <Poster id="runtimeIcon" width="24" height="24" uri="pkg:/images/icons/35px/clock.png" />
+                        <Text id="runtime" vertAlign="center" font="font:SmallestSystemFont" height="24" />
+                    </LayoutGroup>
+                    <LayoutGroup id="numberofepisodesContainer" layoutDirection="horiz" itemSpacings="[8]">
+                        <Poster id="numberofepisodesIcon" width="24" height="24" uri="pkg:/images/icons/35px/tv.png" />
+                        <Text id="numberofepisodes" vertAlign="center" font="font:SmallestSystemFont" height="24" />
+                    </LayoutGroup>
+                    <LayoutGroup id="releasedContainer" layoutDirection="horiz" itemSpacings="[8]">
+                        <Poster id="releasedIcon" width="24" height="24" uri="pkg:/images/icons/35px/calendar.png" />
+                        <Text id="released" vertAlign="center" font="font:SmallestSystemFont" height="24" />
+                    </LayoutGroup>
+                    <LayoutGroup id="ratingContainer" layoutDirection="horiz" itemSpacings="[8]">
+                        <Poster id="ratingIcon" width="24" height="24" uri="pkg:/images/icons/35px/rating.png" />
+                        <Text id="rating" vertAlign="center" font="font:SmallestBoldSystemFont" height="24" />
+                    </LayoutGroup>
+                    <LayoutGroup id="communityReviewContainer" layoutDirection="horiz" itemSpacings="[8]">
+                        <Poster id="communityReviewIcon" height="24" width="24" uri="pkg:/images/sharp_star_white_18dp.png" blendColor="#FFD700" />
+                        <Text id="communityReview" vertAlign="center" font="font:SmallestSystemFont" height="24" />
+                    </LayoutGroup>
+                </LayoutGroup>
+                <Text id="overview" wrap="true" lineSpacing="5" maxLines="4" width="1100" font="font:SmallestSystemFont" color="#f2f2f2ff" translation="[0, 130]" />
+            </Group>
+            <ButtonGroupHoriz id="buttons" itemSpacings="[8]" translation="[100, 852]">
+                <IconButton id="resume" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/resume.png" text="Resume" height="75" width="140" />
+                <IconButton id="play" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/play.png" text="Play" height="75" width="140" />
+                <IconButton id="shuffle" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/shuffle.png" text="Shuffle" height="75" width="140" />
+                <IconButton id="watched-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/check.png" text="Played" height="75" width="140" />
+                <IconButton id="favorite-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/heart.png" text="Favorite" height="75" width="140" />
+                <IconButton id="extras" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/extras.png" text="More" height="75" width="140" />
+                <IconButton id="info-button" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/info.png" text="Info" height="75" width="140" />
+                <IconButton id="delete" focusable="true" background="#55020B2A" focusBackground="#FFFFFF" textColor="#FFFFFF" focusTextColor="#000000" focusIconBlendColor="#000000" highlightTextArea="true" padding="18" icon="pkg:/images/icons/trash.png" text="Delete" height="75" width="140" />
+            </ButtonGroupHoriz>
+        </Group>
+        <Poster id="tvshowPoster" width="300" height="450" translation="[1500, 100]">
+            <PlayedCheckmark id="playedIndicator" translation="[240, 0]" />
+        </Poster>
+        <ExtrasSlider visible="false" id="tvSeasonExtras" />
+        <Animation id="seriesDetailsSlider" duration=".4" repeat="false" easeFunction="linear">
+            <Vector2DFieldInterpolator id="seriesDetailsSliderInterp" key="[0.0, 1.0]" keyValue="[[0, 0], [0, 0]]" fieldToInterp="detailsGroup.translation" />
+        </Animation>
+    </children>
+</component>
+<!--//# sourceMappingURL=./TVSeriesDetails.xml.map -->

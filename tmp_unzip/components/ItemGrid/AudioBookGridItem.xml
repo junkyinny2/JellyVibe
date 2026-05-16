@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="AudioBookGridItem" extends="Group">
+    <interface>
+        <field id="height" type="float" onChange="onHeightChanged" />
+        <field id="width" type="float" onChange="onWidthChanged" />
+        <field id="itemContent" type="node" onChange="itemContentChanged" />
+        <field id="itemHasFocus" type="boolean" onChange="focusChanged" alwaysNotify="true" />
+        <field id="focusPercent" type="float" onChange="onFocusPercentChange" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/ItemGrid/AudioBookGridItem.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/controlStyle.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/AnimationControl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Group translation="[6, 6]">
+            <Poster id="itemShadow" translation="[0,0]" uri="pkg:/images/9patch/filled-rounded.9.png" blendcolor="0x000000FF" opacity="0" />
+            <Group id="posterGroup">
+                <Poster id="focusOutline" uri="pkg:/images/9patch/border-6px.9.png" blendColor="#A64DFF" opacity="0" />
+                <Poster id="backdrop" translation="[0,10]" width="290" height="290" loadDisplayMode="scaleToZoom" uri="pkg:/images/white.9.png" />
+                <Poster id="itemPoster" translation="[0,10]" width="290" height="290" loadDisplayMode="scaleToZoom" />
+            </Group>
+            <LayoutGroup id="title_group" layoutdirection="vert" translation="[5, 305]">
+                <ScrollingText id="posterText" font="font:SmallBoldSystemFont" color="#FFFFFF" maxWidth="280" height="34" horizAlign="left" vertAlign="center" />
+                <ScrollingText id="subText" font="font:SmallBoldSystemFont" color="#777777FF" maxWidth="280" height="32" horizAlign="left" vertAlign="center" />
+            </LayoutGroup>
+            <Rectangle id="progressBackground" visible="false" color="0x00000098" width="290" height="8" translation="[0,295]">
+                <Rectangle id="progress" width="0" height="8" />
+            </Rectangle>
+            <Animation id="focusAnimation" duration="0.2" repeat="false" easeFunction="linear">
+                <Vector2DFieldInterpolator id="translationInterpolator" key="[0.0, 1.0]" keyValue="[[0, 0], [0, 0]]" fieldToInterp="posterGroup.translation" />
+                <FloatFieldInterpolator id="shadowOpacityInterpolator" key="[0.0, 1.0]" keyValue="[0.0, 0.6]" fieldToInterp="itemShadow.opacity" />
+            </Animation>
+            <Animation id="showProgressBar" duration="0.5" repeat="false" easeFunction="linear">
+                <FloatFieldInterpolator id="showProgressBarField" key="[0.0, 1.0]" fieldToInterp="progress.width" />
+            </Animation>
+        </Group>
+    </children>
+</component>
+<!--//# sourceMappingURL=./AudioBookGridItem.xml.map -->

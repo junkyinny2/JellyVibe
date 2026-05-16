@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="FilterPanel" extends="Group">
+    <interface>
+        <field id="isOpen" type="boolean" value="false" onChange="onIsOpenChanged" />
+        <field id="parentId" type="string" value="" />
+        <field id="itemType" type="string" value="" />
+        <field id="selectedGenres" type="stringarray" />
+        <field id="selectedTags" type="stringarray" />
+        <field id="filterChanged" type="assocarray" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/FilterPanel/FilterPanel.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/FilterManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/TaskControl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/KeyCode.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/AnimationState.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/AnimationControl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Rectangle id="scrim" width="1920" height="1080" color="0x000000FF" opacity="0" visible="false" />
+        <Group id="panelGroup" translation="[-420, 0]">
+            <Rectangle id="panelBg" width="420" height="1080" />
+            <Rectangle id="edgeStripe" width="3" height="1080" translation="[417, 0]" />
+            <Label id="headerLabel" text="Filters" font="font:MediumBoldSystemFont" width="340" height="60" translation="[40, 45]" />
+            <StandardButton id="clearAllBtn" text="Clear All" height="55" width="140" translation="[240, 50]" />
+            <Rectangle id="headerDivider" width="380" height="2" translation="[20, 115]" />
+            <FilterSection id="genresSection" sectionTitle="Genres" translation="[0, 130]" />
+            <FilterSection id="tagsSection" sectionTitle="Tags" translation="[0, 0]" />
+        </Group>
+        <Animation id="slideInAnim" duration="0.3" repeat="false" easeFunction="inOutCubic">
+            <Vector2DFieldInterpolator id="slideInInterp" key="[0.0, 1.0]" keyValue="[[-420, 0], [0, 0]]" fieldToInterp="panelGroup.translation" />
+            <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[0.0, 0.55]" fieldToInterp="scrim.opacity" />
+        </Animation>
+        <Animation id="slideOutAnim" duration="0.3" repeat="false" easeFunction="inOutCubic">
+            <Vector2DFieldInterpolator id="slideOutInterp" key="[0.0, 1.0]" keyValue="[[0, 0], [-420, 0]]" fieldToInterp="panelGroup.translation" />
+            <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[0.55, 0.0]" fieldToInterp="scrim.opacity" />
+        </Animation>
+    </children>
+</component>
+<!--//# sourceMappingURL=./FilterPanel.xml.map -->

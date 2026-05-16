@@ -1,0 +1,49 @@
+'import "pkg:/source/enums/ColorPalette.bs"
+'import "pkg:/source/utils/misc.bs"
+
+' ──────────────────────────────────────────────
+' FilterCheckItem  –  checkbox row renderer
+' ──────────────────────────────────────────────
+sub init()
+    m.checkIcon = m.top.findNode("checkIcon")
+    m.itemLabel = m.top.findNode("itemLabel")
+    m.rowBg = m.top.findNode("rowBg")
+    m.thumbPoster = m.top.findNode("thumbPoster")
+end sub
+
+sub onContentChanged()
+    content = m.top.itemContent
+    if not isValid(content) then
+        return
+    end if
+    m.itemLabel.text = content.title
+    ' Set thumbnail image if available
+    if isValid(content.HDPosterUrl) and content.HDPosterUrl <> ""
+        m.thumbPoster.uri = content.HDPosterUrl
+        m.thumbPoster.visible = true
+    else if isValid(content.SDPosterUrl) and content.SDPosterUrl <> ""
+        m.thumbPoster.uri = content.SDPosterUrl
+        m.thumbPoster.visible = true
+    else
+        m.thumbPoster.uri = ""
+        m.thumbPoster.visible = false
+    end if
+    ' Reflect checked state via icon swap
+    if isValid(content.checked) and content.checked
+        m.checkIcon.uri = "pkg:/images/icons/checkbox_checked.png"
+        m.itemLabel.color = "#ffffff"
+    else
+        m.checkIcon.uri = "pkg:/images/icons/checkbox_empty.png"
+        m.itemLabel.color = "#CCCCCCFF"
+    end if
+end sub
+
+sub onFocusChanged()
+    if m.top.focusPercent > 0.5
+        m.rowBg.opacity = 0.15
+        m.rowBg.color = "#7B2FBE"
+    else
+        m.rowBg.opacity = 0
+    end if
+end sub
+'//# sourceMappingURL=./FilterCheckItem.brs.map

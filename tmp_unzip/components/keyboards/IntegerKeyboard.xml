@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="IntegerKeyboard" extends="DynamicCustomKeyboard">
+    <interface>
+        <field id="submit" type="bool" alwaysNotify="true" />
+        <field id="escape" type="string" alwaysNotify="true" />
+        <function name="keySelected" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/keyboards/IntegerKeyboard.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+</component>
+<!--//# sourceMappingURL=./IntegerKeyboard.xml.map -->

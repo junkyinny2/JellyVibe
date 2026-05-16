@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="AudioTrackListData" extends="ContentNode">
+    <interface>
+        <field id="selected" type="boolean" value="false" />
+        <field id="streamIndex" type="integer" value="-1" />
+        <field id="streamName" type="string" value="" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+</component>
+<!--//# sourceMappingURL=./AudioTrackListData.xml.map -->

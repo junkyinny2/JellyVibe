@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="ListPoster" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="itemContentChanged" />
+        <field id="itemWidth" type="integer" />
+        <field id="itemHasFocus" type="boolean" onChange="focusChanged" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/ListPoster.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ViewLoadStatus.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Rectangle id="backdrop" />
+        <ScrollingText id="Series" horizAlign="center" font="font:SmallSystemFont" repeatCount="0" visible="false" />
+        <Poster id="poster" translation="[2,0]" loadDisplayMode="scaleToFit">
+            <PlayedCheckmark id="playedIndicator" translation="[135, 0]" />
+        </Poster>
+        <ScrollingText id="title" horizAlign="center" font="font:SmallSystemFont" repeatCount="0" visible="false" />
+        <Text id="staticTitle" horizAlign="center" font="font:SmallSystemFont" wrap="false" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./ListPoster.xml.map -->

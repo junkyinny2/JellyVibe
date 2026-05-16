@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="Slider" extends="Group">
+    <interface>
+        <field id="value" type="string" onChange="onValueChange" />
+        <field id="options" type="array" onChange="onOptionsChange" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/settings/Slider.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/KeyCode.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Rectangle id="seekBar" width="1050" height="10">
+            <LayoutGroup id="optionMarkers" layoutDirection="horiz" horizAlignment="left" translation="[0, -20]" />
+            <Poster id="thumb" width="25" height="25" uri="pkg:/images/icons/circle.png" translation="[-10, -10]" />
+        </Rectangle>
+    </children>
+</component>
+<!--//# sourceMappingURL=./Slider.xml.map -->

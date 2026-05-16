@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="FilterSection" extends="Group">
+    <interface>
+        <field id="sectionTitle" type="string" value="" onChange="onTitleChanged" />
+        <field id="items" type="array" onChange="onItemsChanged" />
+        <field id="selectedItems" type="stringarray" />
+        <field id="sectionChanged" type="boolean" value="false" />
+        <field id="sectionHeight" type="integer" value="55" />
+        <field id="clearSelections" type="boolean" value="false" onChange="onClearSelections" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/FilterPanel/FilterSection.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/KeyCode.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Rectangle id="sectionHeaderBg" width="420" height="50" />
+        <Label id="sectionLabel" font="font:SmallBoldSystemFont" height="50" width="300" vertAlign="center" translation="[40, 0]" />
+        <Label id="countBadge" font="font:SmallestSystemFont" height="50" width="60" horizAlign="right" vertAlign="center" translation="[330, 0]" text="" />
+        <Label id="collapseIndicator" text="▼" font="font:SmallestSystemFont" height="50" width="30" horizAlign="center" vertAlign="center" translation="[390, 0]" />
+        <CheckList id="itemsList" translation="[20, 55]" itemSize="[380, 52]" itemSpacing="[0, 4]" numRows="8" focusFootprintBitmapUri="" drawFocusFeedback="false" vertFocusAnimationStyle="floatingFocus" visible="true" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./FilterSection.xml.map -->

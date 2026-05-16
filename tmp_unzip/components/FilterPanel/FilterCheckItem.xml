@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="FilterCheckItem" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="onContentChanged" />
+        <field id="focusPercent" type="float" onChange="onFocusChanged" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/FilterPanel/FilterCheckItem.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Rectangle id="rowBg" width="380" height="52" color="0x00000000" opacity="0" />
+        <Poster id="checkIcon" width="24" height="24" translation="[6, 14]" uri="pkg:/images/icons/checkbox_empty.png" />
+        <Poster id="thumbPoster" width="40" height="40" translation="[36, 6]" loadSync="false" loadWidth="80" loadHeight="80" uri="" />
+        <Label id="itemLabel" font="font:SmallestSystemFont" color="#CCCCCCFF" height="52" width="290" vertAlign="center" translation="[82, 0]" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./FilterCheckItem.xml.map -->

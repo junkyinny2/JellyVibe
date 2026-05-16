@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="SearchRow" extends="RowList">
+    <interface>
+        <field id="showItemTitles" type="string" value="" />
+        <field id="rowSize" type="int" />
+        <field id="itemData" type="assocarray" onChange="getData" />
+        <field id="query" type="string" />
+        <field id="itemSelected" type="node" alwaysNotify="true" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/search/SearchRow.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/deviceCapabilities.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/CompatibilityBypass.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/sdk.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/PlaybackMethod.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ItemType.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/Items.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/SubtitleSelection.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/Image.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ImageType.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+</component>
+<!--//# sourceMappingURL=./SearchRow.xml.map -->

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="FolderData" extends="JFContentItem">
+    <interface>
+        <field id="libraryID" type="string" value="" />
+        <field id="itemType" type="string" value="" />
+        <field id="tagId" type="string" value="" />
+        <field id="tagName" type="string" value="" />
+        <function name="setWatched" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/data/FolderData.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/Image.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ImageType.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/sdk.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+</component>
+<!--//# sourceMappingURL=./FolderData.xml.map -->

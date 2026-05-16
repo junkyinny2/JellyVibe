@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="CastItem" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="itemContentChanged" />
+        <field id="itemHasFocus" type="boolean" onChange="focusChanged" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/CastItem.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Poster id="focusRing" uri="pkg:/images/icons/circle.png" width="140" height="140" translation="[0, -5]" blendColor="#00A4DC" visible="false" />
+        <MaskGroup id="photoMask" maskUri="pkg:/images/icons/circle.png" maskSize="[130, 130]" translation="[5, 0]">
+            <Poster id="photo" width="130" height="180" loadDisplayMode="scaleToZoom" />
+        </MaskGroup>
+        <Text id="name" width="140" height="52" horizAlign="center" font="font:SmallSystemFont" translation="[0, 136]" color="#FFFFFF" wrap="true" maxLines="2" />
+        <Text id="role" width="140" height="32" horizAlign="center" font="font:SmallestSystemFont" translation="[0, 192]" color="#AAAAAA" wrap="true" maxLines="2" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./CastItem.xml.map -->

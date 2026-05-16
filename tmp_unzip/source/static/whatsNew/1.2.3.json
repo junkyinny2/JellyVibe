@@ -1,0 +1,18 @@
+[
+  {
+    "description": "Fixed grid clipping - focus outlines no longer cut off by MarkupGrid boundaries",
+    "author": "JellyVibe Team"
+  },
+  {
+    "description": "Added focus padding system (Safe Zone) across all grid items",
+    "author": "JellyVibe Team"
+  },
+  {
+    "description": "Fixed auto-reentry bug after backing out from screens",
+    "author": "JellyVibe Team"
+  },
+  {
+    "description": "Removed scaling animation from grid items for smoother performance",
+    "author": "JellyVibe Team"
+  }
+]

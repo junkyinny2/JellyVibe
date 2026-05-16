@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="ExtrasItem" extends="JFGroup">
+    <interface>
+        <field id="itemContent" type="node" onChange="showContent" />
+        <field id="itemHasFocus" type="boolean" onChange="focusChanged" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/extras/ExtrasItem.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ItemType.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <children>
+        <Poster id="tileBorder" width="234" height="396" translation="[0,0]" uri="pkg:/images/9patch/filled-rounded.9.png" opacity="0" />
+        <Poster id="tileBackground" width="234" height="396" translation="[0,0]" uri="pkg:/images/9patch/filled-rounded.9.png" blendColor="#303030" />
+        <LayoutGroup layoutDirection="vert">
+            <Poster id="posterImg" width="234" height="300" translation="[8,243]" loadDisplayMode="scaleToZoom" failedBitmapUri="pkg:/images/baseline_person_white_48dp.png" />
+            <ScrollingText id="pLabel" horizAlign="left" vertAlign="bottom" height="48" font="font:SmallestBoldSystemFont" repeatCount="0" />
+            <ScrollingText id="SubTitle" horizAlign="left" vertAlign="center" height="32" font="font:SmallestBoldSystemFont" color="#777777FF" repeatCount="0" />
+        </LayoutGroup>
+        <Rectangle id="tagUnderline" width="234" height="2" color="#E5E5E5FF" translation="[0, 62]" visible="false" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./ExtrasItem.xml.map -->

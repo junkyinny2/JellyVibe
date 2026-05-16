@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="SigninScene" extends="JFScreen">
+    <interface>
+        <field id="user" type="string" onchange="onUserChange" value="" />
+        <field id="profileImageUri" type="string" onchange="onProfileImageUriChange" value="" alwaysNotify="true" />
+        <field id="alert" type="string" onchange="onAlertChange" value="" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/config/SigninScene.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/PosterLoadStatus.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/KeyCode.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <children>
+        <Text text="Sign In" horizAlign="center" font="font:LargeSystemFont" height="100" width="1920" translation="[0, 100]" />
+        <Poster uri="pkg:/images/baseline_person_white_48dp.png" id="overlayCurrentUserProfileImage" width="256" height="256" loadDisplayMode="scaleToZoom" translation="[832, 190]" />
+        <Rectangle id="errorContainer" visible="false" width="600" height="60" translation="[660, 386]">
+            <Text id="errorMessage" text="" wrap="true" width="600" font="font:MediumSystemFont" horizAlign="center" translation="[10, 15]" />
+        </Rectangle>
+        <Rectangle id="signInFormContainer" color="#101420" width="870" height="280" translation="[525, 466]">
+            <FormList id="configOptions" translation="[60, 40]" itemSpacing="[0, 50]" />
+        </Rectangle>
+        <CheckList id="saveCredentials" checkedState="[true]" translation="[560, 771]" focusFootprintBitmapUri="" drawFocusFeedback="false">
+            <ContentNode role="content">
+                <ContentNode title="Save Credentials?" />
+            </ContentNode>
+        </CheckList>
+        <StandardButton id="submit" text="Submit" height="85" width="350" translation="[595,900]" />
+        <StandardButton id="quickConnect" text="Quick Connect" height="85" width="350" translation="[975,900]" />
+        <Timer id="quickConnectTimer" duration="3" repeat="true" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./SigninScene.xml.map -->

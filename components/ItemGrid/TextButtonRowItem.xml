@@ -3,7 +3,7 @@
   <interface>
     <field id="itemContent" type="node" onChange="onContentChange" />
     <field id="focusPercent" type="float" onChange="onFocusPercentChange" />
-    <field id="focused" type="boolean" onChange="onFocusChanged" />
+
   </interface>
   <children>
     <Poster id="focusBackground" width="240" height="44" uri="pkg:/images/9patch/filled-rounded.9.png" blendColor="#01A4DC" opacity="0" translation="[0, 8]" />

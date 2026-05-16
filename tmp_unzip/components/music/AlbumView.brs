@@ -1,0 +1,914 @@
+'import "pkg:/source/api/Image.bs"
+'import "pkg:/source/api/Items.bs"
+'import "pkg:/source/enums/ColorPalette.bs"
+'import "pkg:/source/enums/KeyCode.bs"
+'import "pkg:/source/enums/MediaPlaybackState.bs"
+'import "pkg:/source/enums/String.bs"
+'import "pkg:/source/enums/TaskControl.bs"
+'import "pkg:/source/enums/ViewLoadStatus.bs"
+'import "pkg:/source/utils/deviceCapabilities.bs"
+'import "pkg:/source/utils/misc.bs"
+
+sub init()
+    m.loadStatus = 0
+    ' Load background image
+    m.LoadBackdropImageTask = CreateObject("roSGNode", "LoadItemsTask")
+    m.LoadBackdropImageTask.itemsToLoad = "backdropImage"
+    m.backDrop = m.top.findNode("backdrop")
+    m.zoomCover = m.top.findNode("zoomCover")
+    m.zoomCoverBackground = m.top.findNode("zoomCoverBackground")
+    m.overview = m.top.findNode("overview")
+    m.overview.ellipsisText = tr("...")
+    m.released = m.top.findNode("released")
+    m.artistName = m.top.findNode("artistName")
+    m.albumCoverBackground = m.top.findNode("albumCoverBackground")
+    m.albumCoverBackground.color = "0x00000000"
+    m.albumCoverReturnElement = invalid
+    m.genres = m.top.findNode("genres")
+    drawingStyles = {
+        "default": {
+            "fontSize": 23
+            "fontUri": "font:MediumSystemFontFile"
+            "color": "#ffffff"
+        }
+        "b": {
+            "fontSize": 23
+            "fontUri": "font:MediumSystemFontFile"
+            "color": chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+        }
+    }
+    if isValid(m.genres)
+        m.genres.drawingStyles = drawingStyles
+    end if
+    m.highlightedGenre = 0
+    setFontSizes()
+    m.top.optionsAvailable = false
+    setupButtons()
+    m.albumCover = m.top.findNode("albumCover")
+    m.songList = m.top.findNode("songList")
+    m.infoGroup = m.top.FindNode("infoGroup")
+    m.songListRect = m.top.FindNode("songListRect")
+    m.songList.focusFootprintBitmapUri = ""
+    m.songList.focusBitmapBlendColor = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+    m.songList.focusFootprintBlendColor = "#7B2FBE88"
+    m.songListRect.color = "0x00000077"
+    m.songList.observeField("doneLoading", "onDoneLoading")
+end sub
+
+sub setBackdropImage(itemContent)
+    ' Use metadata to load backdrop image
+    if not isChainValid(itemContent, "json.ArtistItems") then
+        return
+    end if
+    if not isValidAndNotEmpty(itemContent.json.ArtistItems) then
+        return
+    end if
+    artistID = itemContent.json.ArtistItems[0].LookupCI("id")
+    if not isValidAndNotEmpty(artistID) then
+        return
+    end if
+    m.LoadBackdropImageTask.itemId = artistID
+    m.LoadBackdropImageTask.observeField("content", "onBackdropImageLoaded")
+    m.LoadBackdropImageTask.control = "RUN"
+end sub
+
+sub onBackdropImageLoaded()
+    m.LoadBackdropImageTask.control = "STOP"
+    data = m.LoadBackdropImageTask.content[0]
+    m.LoadBackdropImageTask.unobserveField("content")
+    if isValidAndNotEmpty(data)
+        if not isStringEqual(m.backDrop.uri, data)
+            m.backDrop.uri = data
+        end if
+    end if
+end sub
+
+sub setFontSizes()
+    if isValid(m.overview)
+        m.overview.font.size = 27
+    end if
+    albumTitle = m.top.findNode("albumTitle")
+    if isValid(albumTitle)
+        albumTitle.font.size = 45
+    end if
+    if isValid(m.artistName)
+        m.artistName.font.size = 23
+    end if
+    runtime = m.top.findNode("runtime")
+    if isValid(runtime)
+        runtime.font.size = 23
+    end if
+    numberofsongs = m.top.findNode("numberofsongs")
+    if isValid(numberofsongs)
+        numberofsongs.font.size = 23
+    end if
+    if isValid(m.released)
+        m.released.font.size = 23
+    end if
+    trackHeading = m.top.findNode("trackHeading")
+    if isValid(trackHeading)
+        trackHeading.font.size = 23
+    end if
+    titleHeading = m.top.findNode("titleHeading")
+    if isValid(titleHeading)
+        titleHeading.font.size = 23
+    end if
+    lengthHeading = m.top.findNode("lengthHeading")
+    if isValid(lengthHeading)
+        lengthHeading.font.size = 23
+    end if
+    playsHeading = m.top.findNode("playsHeading")
+    if isValid(playsHeading)
+        playsHeading.font.size = 23
+    end if
+end sub
+
+' Set values for displayed values on screen
+sub pageContentChanged()
+    item = m.top.pageContent
+    m.top.isFavorite = chainLookupReturn(m.top.pageContent, "json.UserData.IsFavorite", false)
+    artists = chainLookup(item, "json.Artists")
+    if isValidAndNotEmpty(artists)
+        m.songList.isCompilation = artists.count() > 1
+    else
+        m.songList.isCompilation = false
+    end if
+    setBackdropImage(item)
+    setPosterImage(item.posterURL)
+    setScreenTitle(item.json)
+    setOnScreenTextValues(item.json)
+end sub
+
+' Set poster image on screen
+sub setPosterImage(posterURL)
+    if isValid(posterURL)
+        m.albumCover.uri = posterURL
+    end if
+end sub
+
+' Set screen's title text
+sub setScreenTitle(json)
+    if not isValidAndNotEmpty(json) then
+        return
+    end if
+    albumTitle = m.top.findNode("albumTitle")
+    if isValid(albumTitle)
+        albumTitle.text = json.name
+    end if
+    if isValid(m.artistName)
+        m.artistName.text = json.AlbumArtist
+    end if
+end sub
+
+sub adjustForMiniPlayer(audioMiniPlayerVisible = false)
+    if not isChainValid(m.songList, "MusicArtistAlbumData") then
+        return
+    end if
+    if m.songList.MusicArtistAlbumData.getChildCount() < 7 then
+        return
+    end if
+    if audioMiniPlayerVisible then
+        newNumberOfRows = 7
+    else
+        newNumberOfRows = 9
+    end if
+    ' To make Roku redraw with the new row count, we must move the cursor far enough for it to change content
+    if m.songList.numRows <> newNumberOfRows
+        focusedItem = m.songList.itemFocused
+        m.songList.numRows = newNumberOfRows
+        m.songList.jumpToItem = m.songList.MusicArtistAlbumData.getChildCount() - 1
+        m.songList.jumpToItem = 0
+        m.songList.jumpToItem = focusedItem
+    end if
+end sub
+
+sub onAudioMiniPlayerVisibleChange()
+    scene = m.top.getScene()
+    audioMiniPlayer = scene.findNode("audioMiniPlayer")
+    if isValid(audioMiniPlayer)
+        audioMiniPlayerVisibility = audioMiniPlayer.callFunc("isVisible")
+        adjustForMiniPlayer(audioMiniPlayerVisibility)
+        processAddToQueueButtonVisibility(audioMiniPlayerVisibility)
+    end if
+end sub
+
+sub onAudioMiniPlayerStateChange()
+    if isStringEqual(m.global.audioPlayer.state, "finished")
+        refreshAlbumTrackList()
+    end if
+end sub
+
+sub OnScreenHidden()
+    scene = m.top.getScene()
+    audioMiniPlayer = scene.findNode("audioMiniPlayer")
+    if isValid(audioMiniPlayer)
+        audioMiniPlayer.unobserveFieldScoped("visible")
+    end if
+    m.global.audioPlayer.unobserveFieldScoped("state")
+end sub
+
+sub applyControlButtonStyle(button as object)
+    if not isValid(button) then
+        return
+    end if
+    button.focusBackground = "#ffffff"
+    button.textColor = "#ffffff"
+    button.focusTextColor = "#000000"
+    button.focusIconBlendColor = "#000000"
+end sub
+
+sub createAddToQueueButton()
+    m.addToQueue = createObject("roSGNode", "IconButton")
+    m.addToQueue.id = "addToQueue"
+    m.addToQueue.background = "#070707"
+    m.addToQueue.padding = "35"
+    m.addToQueue.icon = "pkg:/images/icons/plus.png"
+    m.addToQueue.text = tr("Queue")
+    m.addToQueue.height = "65"
+    m.addToQueue.width = "140"
+    m.addToQueue.highlightTextArea = true
+    applyControlButtonStyle(m.addToQueue)
+    m.buttonGrp.insertChild(m.addToQueue, 1)
+    m.buttonCount = m.buttonGrp.getChildCount()
+    if m.buttonGrp.isInFocusChain()
+        if m.top.selectedButtonIndex < 1
+            m.previouslySelectedButtonIndex = m.top.selectedButtonIndex
+            m.top.selectedButtonIndex = m.top.selectedButtonIndex + 1
+        end if
+    end if
+end sub
+
+sub removeAddToQueueButton()
+    m.buttonGrp.removeChild(m.addToQueue)
+    m.addToQueue = invalid
+    m.buttonCount = m.buttonGrp.getChildCount()
+    ' Cursor is on AddToQueueButton
+    if m.top.selectedButtonIndex = 1
+        m.top.selectedButtonIndex = m.top.selectedButtonIndex - 1
+        return
+    end if
+    ' Cursor is to the right of AddToQueueButton
+    if m.top.selectedButtonIndex > 1
+        m.top.unobserveFieldScoped("selectedButtonIndex")
+        m.previouslySelectedButtonIndex = -1
+        m.top.selectedButtonIndex = m.top.selectedButtonIndex - 1
+        m.top.observeFieldScoped("selectedButtonIndex", "onButtonSelectedChange")
+    end if
+end sub
+
+sub processAddToQueueButtonVisibility(audioMiniPlayerVisible = false)
+    ' If we are currently playing audio, ensure Add to Queue button exists, otherwise, remove it
+    if audioMiniPlayerVisible
+        if not isValid(m.addToQueue)
+            createAddToQueueButton()
+        end if
+    else
+        if isValid(m.addToQueue)
+            removeAddToQueueButton()
+        end if
+    end if
+end sub
+
+sub OnScreenShown()
+    scene = m.top.getScene()
+    audioMiniPlayer = scene.findNode("audioMiniPlayer")
+    if isValid(audioMiniPlayer)
+        audioMiniPlayerVisibility = audioMiniPlayer.callFunc("isVisible")
+        audioMiniPlayer.observeFieldScoped("visible", "onAudioMiniPlayerVisibleChange")
+        adjustForMiniPlayer(audioMiniPlayerVisibility)
+        processAddToQueueButtonVisibility(audioMiniPlayerVisibility)
+    end if
+    m.global.audioPlayer.observeFieldScoped("state", "onAudioMiniPlayerStateChange")
+    overhang = scene.findNode("overhang")
+    if overhang.isVisible
+        overhang.isVisible = false
+    end if
+    if isValid(m.top.lastFocus)
+        m.top.lastFocus.setFocus(true)
+        group = m.global.sceneManager.callFunc("getActiveScene")
+        group.lastFocus = m.top.lastFocus
+    else
+        m.play.setFocus(true)
+        group = m.global.sceneManager.callFunc("getActiveScene")
+        group.lastFocus = m.play
+    end if
+    ' Refresh Track List for Playcount Update
+    if m.loadStatus <> 0
+        refreshAlbumTrackList()
+    end if
+end sub
+
+sub refreshAlbumTrackList()
+    if not isChainValid(m.top.pageContent, "id") then
+        return
+    end if
+    m.focusedItem = m.songList.itemFocused
+    m.LoadAlbumTask = CreateObject("roSGNode", "LoadAlbumTask")
+    m.LoadAlbumTask.id = m.top.pageContent.id
+    m.LoadAlbumTask.observeField("albumDetails", "onAlbumDetailsLoaded")
+    m.LoadAlbumTask.control = "RUN"
+end sub
+
+sub onAlbumDetailsLoaded()
+    m.LoadAlbumTask.unobserveField("albumDetails")
+    m.LoadAlbumTask.control = "STOP"
+    m.songList.doneLoading = false
+    m.songList.observeField("doneLoading", "onDoneLoading")
+    albumDetails = m.LoadAlbumTask.albumDetails
+    m.top.albumData = albumDetails
+end sub
+
+' Populate on screen text variables
+sub setOnScreenTextValues(json)
+    if isValid(json)
+        if isValidAndNotEmpty(json.overview)
+            ' We have overview text
+            setFieldTextValue("overview", json.overview)
+        end if
+        setFieldTextValue("numberofsongs", (bslib_toString(json.ChildCount) + " " + bslib_toString(tr("Tracks"))))
+        if type(json.ProductionYear) = "roInt"
+            setFieldTextValue("released", (bslib_toString(json.ProductionYear)))
+        else
+            releasedContainer = m.released.GetParent()
+            releasedContainer.GetParent().removeChild(releasedContainer)
+            m.released = invalid
+        end if
+        if isValidAndNotEmpty(json.genres)
+            m.genreList = json.genres
+            if m.genreList.count() > 3
+                m.genreList = m.genreList.slice(0, 3)
+            end if
+            m.genres.text = m.genreList.join(", ")
+        else
+            genresIcon = m.top.findNode("genresIcon")
+            genresIcon.GetParent().removeChild(genresIcon)
+            m.genres.GetParent().removeChild(m.genres)
+            m.genres = invalid
+        end if
+        if type(json.RunTimeTicks) = "LongInteger"
+            setFieldTextValue("runtime", (bslib_toString(ticksToHuman(json.RunTimeTicks))))
+        end if
+    end if
+end sub
+
+' Setup playback buttons, default to Play button selected
+sub setupButtons()
+    m.buttonGrp = m.top.findNode("buttons")
+    m.buttonCount = m.buttonGrp.getChildCount()
+    m.play = m.top.findNode("play")
+    applyControlButtonStyle(m.play)
+    m.top.lastFocus = m.buttonGrp
+    m.addToQueue = m.top.findNode("addToQueue")
+    applyControlButtonStyle(m.addToQueue)
+    shuffle = m.top.findNode("shuffle")
+    applyControlButtonStyle(shuffle)
+    instantMix = m.top.findNode("instantMix")
+    applyControlButtonStyle(instantMix)
+    m.dotDotDot = m.top.findNode("dotDotDot")
+    applyControlButtonStyle(m.dotDotDot)
+    m.delete = m.top.findNode("delete")
+    applyControlButtonStyle(m.delete)
+    hasDeletePermissions = chainLookupReturn(m.global.session, "user.Policy.EnableContentDeletion", false)
+    ' Only allow those with EnableContentDeletion permissions to see Delete button
+    if not hasDeletePermissions
+        if isValid(m.delete)
+            m.buttonGrp.removeChild(m.delete)
+            m.delete = invalid
+            m.buttonCount = m.buttonGrp.getChildCount()
+        end if
+    end if
+    m.previouslySelectedButtonIndex = -1
+    m.top.observeFieldScoped("selectedButtonIndex", "onButtonSelectedChange")
+    m.top.selectedButtonIndex = 0
+end sub
+
+' Event handler when user selected a different playback button
+sub onButtonSelectedChange()
+    ' Change previously focused button back to default
+    if m.previouslySelectedButtonIndex > -1
+        previousSelectedButton = m.buttonGrp.getChild(m.previouslySelectedButtonIndex)
+        if isValid(previousSelectedButton)
+            previousSelectedButton.focus = false
+        end if
+    end if
+    ' Change selected button image to focus state
+    selectedButton = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+    selectedButton.focus = true
+    selectedButton.setfocus(true)
+end sub
+
+function focusReleaseDate() as boolean
+    if not isValid(m.released) then
+        return false
+    end if
+    m.released.setFocus(true)
+    m.released.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+    m.top.lastFocus = m.released
+    return true
+end function
+
+function focusGenres() as boolean
+    if not isValid(m.genres) then
+        return false
+    end if
+    m.highlightedGenre = 0
+    highlightGenre()
+    m.genres.text = m.genreList.join(", ")
+    m.genres.setFocus(true)
+    m.top.lastFocus = m.genres
+    return true
+end function
+
+sub highlightGenre()
+    activeGenre = m.genreList[m.highlightedGenre]
+    if not isValid(activeGenre) then
+        return
+    end if
+    m.genreList[m.highlightedGenre] = ("<b>" + bslib_toString(activeGenre) + "</b>")
+    m.genres.text = m.genreList.join(", ")
+end sub
+
+sub dehighlightGenre()
+    activeGenre = m.genreList[m.highlightedGenre]
+    if not isValid(activeGenre) then
+        return
+    end if
+    activeGenre = activeGenre.replace("<b>", "").replace("</b>", "")
+    m.genreList[m.highlightedGenre] = activeGenre
+end sub
+
+sub unfocusGenres()
+    if not isValid(m.genres) then
+        return
+    end if
+    dehighlightGenre()
+    m.genres.text = m.genreList.join(", ")
+end sub
+
+sub unfocusButton()
+    m.buttonGrp.getChild(m.top.selectedButtonIndex).escape = ""
+    selectedButton = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+    selectedButton.focus = false
+end sub
+
+function highlightCover(returnElement as object) as boolean
+    ' If no album cover image has loaded, don't highlight
+    if m.albumCover.bitmapWidth = 0 then
+        return false
+    end if
+    m.albumCoverReturnElement = returnElement
+    m.albumCoverBackground.setFocus(true)
+    m.albumCoverBackground.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+    return true
+end function
+
+sub dehighlightCover()
+    returnElementType = m.albumCoverReturnElement.subtype()
+    if isStringEqual(returnElementType, "IconButton")
+        onButtonSelectedChange()
+    else if isStringEqual(returnElementType, "MultiStyleText")
+        highlightGenre()
+    else if isStringEqual(returnElementType, "Text")
+        m.albumCoverReturnElement.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+    else if isStringEqual(returnElementType, "ScrollingText")
+        m.albumCoverReturnElement.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+    end if
+    m.albumCoverReturnElement.setfocus(true)
+    m.top.lastFocus = m.albumCoverReturnElement
+    m.albumCoverBackground.color = "0x00000000"
+end sub
+
+sub zoomAlbumCover()
+    if isValidAndNotEmpty(m.zoomCover.uri)
+        displayZoomCover()
+    end if
+    deviceInfo = CreateObject("roDeviceInfo")
+    m.screenResolution = deviceInfo.GetDisplaySize()
+    m.zoomCover.uri = m.top.pageContent.posterURL.replace("maxHeight=400", ("maxHeight=" + bslib_toString(m.screenResolution.h))).replace("maxWidth=400", ("maxWidth=" + bslib_toString(m.screenResolution.w)))
+    m.zoomCover.observeFieldScoped("bitmapWidth", "onZoomCoverWidthChange")
+    m.zoomCover.observeFieldScoped("bitmapHeight", "onZoomCoverHeightChange")
+    displayZoomCover()
+end sub
+
+sub displayZoomCover()
+    m.zoomCoverBackground.color = "0x000000DD"
+    m.zoomCoverBackground.visible = true
+end sub
+
+sub hideZoomCover()
+    m.zoomCoverBackground.visible = false
+end sub
+
+sub onZoomCoverWidthChange()
+    m.zoomCover.unobserveFieldScoped("bitmapWidth")
+    m.zoomCover.width = m.zoomCover.bitmapWidth
+    m.zoomCover.translation = [
+        (1920 - m.zoomCover.width) / 2
+        m.zoomCover.translation[1]
+    ]
+end sub
+
+sub onZoomCoverHeightChange()
+    m.zoomCover.unobserveFieldScoped("bitmapHeight")
+    m.zoomCover.height = m.zoomCover.bitmapHeight
+    m.zoomCover.translation = [
+        m.zoomCover.translation[0]
+        (1080 - m.zoomCover.height) / 2
+    ]
+end sub
+
+sub addSongsToQueue()
+    albumSongs = m.top.albumData.getChildren(-1, 0)
+    if not isValidAndNotEmpty(albumSongs) then
+        return
+    end if
+    startLoadingSpinner()
+    for each song in albumSongs
+        m.global.queueManager.callFunc("push", song)
+    end for
+    stopLoadingSpinner()
+end sub
+
+sub openMorePopup()
+    dialogData = []
+    paramData = {
+        id: m.top.pageContent.LookupCI("id")
+    }
+    if m.top.isFavorite then
+        m.favoritesOptionText = tr("Remove From Favorites")
+    else
+        m.favoritesOptionText = tr("Add To Favorites")
+    end if
+    dialogData.push(m.favoritesOptionText)
+    dialogData.push(tr("Add To Playlist"))
+    m.global.sceneManager.callFunc("optionDialog", "libraryitem", (function(m, tr)
+            __bsConsequent = m.top.pageContent.json.LookupCI("name")
+            if __bsConsequent <> invalid then
+                return __bsConsequent
+            else
+                return tr("Options")
+            end if
+        end function)(m, tr), [], dialogData, paramData)
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if m.buttonGrp.isInFocusChain()
+        if key = "up"
+            if m.buttonGrp.getChild(m.top.selectedButtonIndex).escape = "up"
+                ' If there is no overview content
+                if isStringEqual(m.overview.text, "")
+                    if focusReleaseDate()
+                        unfocusButton()
+                        return true
+                    end if
+                    if focusGenres()
+                        unfocusButton()
+                        return true
+                    end if
+                    ' If we have no genres, check if we can go to the artistName
+                    if not isValidAndNotEmpty(chainLookup(m.artistName, "text")) then
+                        return false
+                    end if
+                    unfocusButton()
+                    m.artistName.setFocus(true)
+                    m.artistName.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+                    m.top.lastFocus = m.artistName
+                else
+                    unfocusButton()
+                    m.overview.setFocus(true)
+                    m.overview.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+                    m.top.lastFocus = m.overview
+                    return true
+                end if
+            end if
+        end if
+        if key = "OK"
+            if press
+                if isValid(m.addToQueue)
+                    if m.addToQueue.hasFocus()
+                        addSongsToQueue()
+                        return true
+                    end if
+                end if
+                if m.dotDotDot.hasFocus()
+                    openMorePopup()
+                    return true
+                end if
+                if m.delete.hasFocus()
+                    confirmDeleteItem()
+                    return true
+                end if
+                selectedButton = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+                selectedButton.selected = not selectedButton.selected
+                return true
+            end if
+        end if
+        if key = "left"
+            if m.buttonGrp.getChild(m.top.selectedButtonIndex).escape = "left"
+                if m.top.selectedButtonIndex > 0
+                    m.previouslySelectedButtonIndex = m.top.selectedButtonIndex
+                    m.top.selectedButtonIndex = m.top.selectedButtonIndex - 1
+                    return true
+                end if
+            end if
+        end if
+        if key = "right"
+            if m.top.selectedButtonIndex < m.buttonCount - 1
+                m.previouslySelectedButtonIndex = m.top.selectedButtonIndex
+                m.top.selectedButtonIndex = m.top.selectedButtonIndex + 1
+                return true
+            else
+                selectedButton = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+                if highlightCover(selectedButton)
+                    selectedButton.focus = false
+                end if
+            end if
+        end if
+        if key = "down"
+            if m.buttonGrp.getChild(m.top.selectedButtonIndex).escape = "down"
+                m.buttonGrp.getChild(m.top.selectedButtonIndex).escape = ""
+                selectedButton = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+                selectedButton.focus = false
+                m.songList.setFocus(true)
+                m.top.lastFocus = m.songList
+                return true
+            end if
+        end if
+    end if
+    if not press then
+        return false
+    end if
+    if m.zoomCoverBackground.visible
+        hideZoomCover()
+        return true
+    end if
+    if m.albumCoverBackground.isInFocusChain()
+        if isStringEqual(key, "OK")
+            zoomAlbumCover()
+            return true
+        end if
+        if isStringEqual(key, "left")
+            dehighlightCover()
+            return true
+        end if
+        if isStringEqual(key, "down")
+            m.albumCoverReturnElement = m.songList
+            dehighlightCover()
+            return true
+        end if
+        return false
+    end if
+    if m.songList.hasFocus()
+        if key = "options"
+            focusedSong = m.songList.content.getChild(m.songList.itemFocused)
+            if not isValidAndNotEmpty(focusedSong) then
+                return false
+            end if
+            dialogData = [
+                tr("Add To Playlist")
+            ]
+            m.global.sceneManager.callFunc("optionDialog", "libraryitem", (function(focusedSong, tr)
+                    __bsConsequent = focusedSong.LookupCI("title")
+                    if __bsConsequent <> invalid then
+                        return __bsConsequent
+                    else
+                        return tr("Options")
+                    end if
+                end function)(focusedSong, tr), [], dialogData, {
+                id: focusedSong.LookupCI("id")
+            })
+            return true
+        end if
+        if key = "up"
+            onButtonSelectedChange()
+            return true
+        end if
+    end if
+    if isValid(m.released)
+        if m.released.isInFocusChain()
+            if isStringEqual(key, "right")
+                if focusGenres()
+                    m.released.color = "#ffffff"
+                    return true
+                end if
+            end if
+            if isStringEqual(key, "down")
+                m.released.color = "#ffffff"
+                ' If we have an overview, focus it
+                if not isStringEqual(m.overview.text, "")
+                    m.overview.setFocus(true)
+                    m.overview.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+                    m.top.lastFocus = m.overview
+                    return true
+                end if
+                ' We have no overview, focus buttons
+                selectedButton = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+                selectedButton.focus = true
+                selectedButton.setfocus(true)
+                return true
+            end if
+            if isStringEqual(key, "up")
+                ' Check if we can go to the artistName
+                if not isValidAndNotEmpty(chainLookup(m.artistName, "text")) then
+                    return false
+                end if
+                m.released.color = "#ffffff"
+                m.artistName.setFocus(true)
+                m.artistName.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+                m.top.lastFocus = m.artistName
+                return true
+            end if
+            if isStringEqual(key, "OK")
+                releaseDate = chainLookup(m.top.pageContent, "json.ProductionYear")
+                if not isValid(releaseDate) then
+                    return false
+                end if
+                m.top.getScene().jumpTo = {
+                    selectionType: "releaseDate"
+                    name: releaseDate
+                }
+                return true
+            end if
+        end if
+    end if
+    if isValid(m.genres)
+        if m.genres.isInFocusChain()
+            if isStringEqual(key, "left")
+                if m.highlightedGenre = 0
+                    if focusReleaseDate()
+                        unfocusGenres()
+                        return true
+                    end if
+                    return false
+                end if
+                dehighlightGenre()
+                m.highlightedGenre--
+                highlightGenre()
+                return true
+            end if
+            if isStringEqual(key, "right")
+                dehighlightGenre()
+                if m.highlightedGenre = m.genreList.count() - 1
+                    if highlightCover(m.genres)
+                        m.genres.text = m.genreList.join(", ")
+                    end if
+                    return true
+                end if
+                m.highlightedGenre++
+                highlightGenre()
+                return true
+            end if
+            if isStringEqual(key, "OK")
+                data = m.top.pageContent.json.GenreItems[m.highlightedGenre]
+                data.selectionType = "genre"
+                m.top.getScene().jumpTo = data
+                return true
+            end if
+            if isStringEqual(key, "down")
+                unfocusGenres()
+                ' If there is no overview content, go straight to buttons
+                if isStringEqual(m.overview.text, "")
+                    selectedButton = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+                    selectedButton.focus = true
+                    selectedButton.setfocus(true)
+                    return true
+                else
+                    m.overview.setFocus(true)
+                    m.overview.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+                    m.top.lastFocus = m.overview
+                    return true
+                end if
+            end if
+            if isStringEqual(key, "up")
+                if not isValidAndNotEmpty(chainLookup(m.artistName, "text")) then
+                    return false
+                end if
+                unfocusGenres()
+                m.artistName.setFocus(true)
+                m.artistName.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+                m.top.lastFocus = m.artistName
+            end if
+        end if
+    end if
+    if m.artistName.hasFocus()
+        if isStringEqual(key, "down")
+            m.artistName.color = "#ffffff"
+            ' If we have release date, focus it, otherwise focus genres
+            if focusReleaseDate()
+                m.artistName.color = "#ffffff"
+                return true
+            end if
+            ' If we have release date, focus it, otherwise focus genres
+            if focusGenres()
+                m.artistName.color = "#ffffff"
+                return true
+            end if
+            ' We have no genres, if we have an overview, focus it
+            if not isStringEqual(m.overview.text, "")
+                m.overview.setFocus(true)
+                m.overview.color = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+                m.top.lastFocus = m.overview
+                return true
+            end if
+            ' We have no overview, focus buttons
+            selectedButton = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+            selectedButton.focus = true
+            selectedButton.setfocus(true)
+            return true
+        end if
+        if isStringEqual(key, "OK")
+            itemContent = m.top.pageContent
+            if not isChainValid(itemContent, "json.AlbumArtists") then
+                return false
+            end if
+            if not isValidAndNotEmpty(itemContent.json.AlbumArtists) then
+                return false
+            end if
+            data = itemContent.json.AlbumArtists[0]
+            data.selectionType = "artist"
+            m.top.getScene().jumpTo = data
+            return true
+        end if
+        if isStringEqual(key, "right")
+            if highlightCover(m.artistName)
+                m.artistName.color = "#ffffff"
+            end if
+            return true
+        end if
+    end if
+    if m.overview.hasFocus()
+        if key = "OK"
+            createFullDscrDlg()
+            return true
+        end if
+        if isStringEqual(key, "right")
+            if highlightCover(m.overview)
+                m.overview.color = "#ffffff"
+            end if
+            return true
+        end if
+        if isStringEqual(key, "up")
+            if focusReleaseDate()
+                m.overview.color = "#ffffff"
+                return true
+            end if
+            if focusGenres()
+                m.overview.color = "#ffffff"
+                return true
+            end if
+        end if
+        if key = "down"
+            m.overview.color = "#ffffff"
+            selectedButton = m.buttonGrp.getChild(m.top.selectedButtonIndex)
+            selectedButton.focus = true
+            selectedButton.setfocus(true)
+            return true
+        end if
+    end if
+    return false
+end function
+
+' Display confirmation dialog before deleting an item
+sub confirmDeleteItem()
+    params = {
+        id: m.top.pageContent.id
+    }
+    m.global.sceneManager.callFunc("optionDialog", "delete_item", tr("Confirm Deletion?"), tr("Deleting this item will delete it from both the file system and your media library. Are you sure you wish to continue?"), [
+        tr("No")
+        tr("Delete")
+    ], params)
+end sub
+
+sub createFullDscrDlg()
+    albumTitle = m.top.findNode("albumTitle")
+    if isAllValid([
+        albumTitle.text
+        m.overview.text
+    ])
+        m.global.sceneManager.callFunc("standardDialog", albumTitle.text, {
+            data: [
+                "<p>" + m.overview.text + "</p>"
+            ]
+        })
+    end if
+end sub
+
+sub onDoneLoading()
+    m.songList.unobservefield("doneLoading")
+    stopLoadingSpinner()
+    if m.loadStatus = 0
+        m.loadStatus = 1
+    end if
+    if isValid(m.focusedItem)
+        m.songList.jumpToItem = m.focusedItem
+        m.focusedItem = invalid
+    end if
+    scene = m.top.getScene()
+    audioMiniPlayer = scene.findNode("audioMiniPlayer")
+    if isValid(audioMiniPlayer)
+        audioMiniPlayerVisibility = audioMiniPlayer.callFunc("isVisible")
+        adjustForMiniPlayer(audioMiniPlayerVisibility)
+        processAddToQueueButtonVisibility(audioMiniPlayerVisibility)
+    end if
+end sub
+'//# sourceMappingURL=./AlbumView.brs.map

@@ -1,0 +1,192 @@
+'import "pkg:/source/enums/AnimationControl.bs"
+'import "pkg:/source/enums/ColorPalette.bs"
+'import "pkg:/source/enums/KeyCode.bs"
+'import "pkg:/source/enums/TaskControl.bs"
+'import "pkg:/source/utils/misc.bs"
+
+sub init()
+    m.top.focusable = true
+    m.menubg = m.top.findNode("menubg")
+    m.focusRing = m.top.findNode("focus")
+    m.buttonGroup = m.top.findNode("buttonGroup")
+    m.focusAnim = m.top.findNode("moveFocusAnimation")
+    m.focusAnimTranslation = m.top.findNode("focusLocation")
+    m.focusAnimWidth = m.top.findNode("focusWidth")
+    m.focusAnimHeight = m.top.findNode("focusHeight")
+    ' Set button color to global
+    m.focusRing.color = "#7B2FBE"
+    m.buttonCount = 0
+    m.selectedFocusedIndex = 0
+    m.textSizeTask = createObject("roSGNode", "TextSizeTask")
+    m.top.observeField("focusedChild", "focusChanged")
+    m.top.enableRenderTracking = true
+    m.top.observeField("renderTracking", "renderChanged")
+end sub
+
+'
+' When Selected Index set, ensure it is the one Focused
+sub selectedIndexChanged()
+    m.selectedFocusedIndex = m.top.selectedIndex
+end sub
+
+sub focusedIndexChanged()
+    targetIndex = m.top.focusedIndex
+    if targetIndex < 0 then
+        targetIndex = 0
+    end if
+    childCount = m.buttonGroup.getChildCount()
+    if childCount <= 0
+        m.selectedFocusedIndex = targetIndex
+        return
+    end if
+    if targetIndex >= childCount then
+        targetIndex = childCount - 1
+    end if
+    if targetIndex = m.selectedFocusedIndex then
+        return
+    end if
+    m.selectedFocusedIndex = targetIndex
+    highlightSelected(m.selectedFocusedIndex, false)
+    if m.top.isInFocusChain()
+        setButtonColor("#ffffff")
+    end if
+end sub
+
+'
+' When options are fully displayed, set focus and selected option
+sub renderChanged()
+    if m.top.renderTracking = "full"
+        highlightSelected(m.selectedFocusedIndex, false)
+        m.top.setfocus(true)
+        group = m.global.sceneManager.callFunc("getActiveScene")
+        group.lastFocus = m.top
+    end if
+end sub
+
+sub updateButtons()
+    if not isValid(m.textSizeTask)
+        m.textSizeTask = createObject("roSGNode", "TextSizeTask")
+    end if
+    if not isValid(m.textSizeTask) then
+        return
+    end if
+    m.textSizeTask.fontsize = 40
+    m.textSizeTask.text = m.top.buttons
+    m.textSizeTask.name = m.buttonCount.toStr()
+    m.textSizeTask.unobserveField("width")
+    m.textSizeTask.observeField("width", "showButtons")
+    m.textSizeTask.control = "RUN"
+end sub
+
+sub showButtons()
+    if not isValid(m.textSizeTask) or not isValid(m.textSizeTask.width) then
+        return
+    end if
+    ' Clear existing buttons to prevent duplicate accumulation
+    m.buttonGroup.removeChildren(m.buttonGroup.getChildren(-1, 0))
+    m.buttonCount = 0
+    totalWidth = 110 ' track for menu background width - start with side padding
+    for i = 0 to m.top.buttons.count() - 1
+        m.buttonCount = m.buttonCount + 1
+        l = m.buttonGroup.createChild("Label")
+        l.text = m.top.buttons[i]
+        l.color = "#ffffff"
+        l.font.size = 40
+        l.translation = [
+            0
+            10
+        ]
+        l.height = m.textSizeTask.height
+        l.width = m.textSizeTask.width[i] + 50
+        l.horizAlign = "center"
+        l.vertAlign = "center"
+        totalWidth = totalWidth + l.width + 45
+    end for
+    m.menubg.width = totalWidth
+    m.menubg.height = m.textSizeTask.height + 40
+    ' Refresh focus highlight after rebuilding buttons
+    highlightSelected(m.selectedFocusedIndex, false)
+end sub
+
+' Highlight selected menu option
+sub highlightSelected(index as integer, animate = true)
+    val = m.buttonGroup.getChild(index)
+    if not isValid(val) then
+        return
+    end if
+    rect = val.ancestorBoundingRect(m.top)
+    if not isValid(rect) then
+        return
+    end if
+    if animate = true
+        m.focusAnimTranslation.keyValue = [
+            m.focusRing.translation
+            [
+                rect.x - 25
+                rect.y - 30
+            ]
+        ]
+        m.focusAnimWidth.keyValue = [
+            m.focusRing.width
+            val.width + 50
+        ]
+        m.focusAnimHeight.keyValue = [
+            m.focusRing.height
+            val.height + 60
+        ]
+        m.focusAnim.control = "start"
+    else
+        m.focusRing.translation = [
+            rect.x - 25
+            rect.y - 30
+        ]
+        m.focusRing.width = val.width + 50
+        m.focusRing.height = val.height + 60
+    end if
+end sub
+
+' Change opacity of the highlighted menu item based on focus
+sub focusChanged()
+    if m.top.isInFocusChain()
+        m.focusRing.color = "#7B2FBE"
+        setButtonColor("#ffffff")
+    else
+        m.focusRing.color = "#6F7FB7"
+        setButtonColor("#101010")
+    end if
+end sub
+
+sub setButtonColor(color as string)
+    val = m.buttonGroup.getChild(m.selectedFocusedIndex)
+    if isValid(val)
+        val.color = color
+    end if
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then
+        return false
+    end if
+    if key = "left"
+        if m.selectedFocusedIndex > 0
+            m.selectedFocusedIndex = m.selectedFocusedIndex - 1
+        end if
+        highlightSelected(m.selectedFocusedIndex)
+        m.top.focusedIndex = m.selectedFocusedIndex
+        return true
+    end if
+    if key = "right"
+        if m.selectedFocusedIndex < m.buttonCount - 1
+            m.selectedFocusedIndex = m.selectedFocusedIndex + 1
+        end if
+        highlightSelected(m.selectedFocusedIndex)
+        m.top.focusedIndex = m.selectedFocusedIndex
+        return true
+    end if
+    if key = "OK"
+        m.top.selectedIndex = m.selectedFocusedIndex
+        return true
+    end if
+    return false
+end function
+'//# sourceMappingURL=./JFButtons.brs.map

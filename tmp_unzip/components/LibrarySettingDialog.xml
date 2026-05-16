@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="LibrarySettingDialog" extends="StandardMessageDialog" initialFocus="watchedCheckmark">
+    <script type="text/brightscript" uri="pkg:/components/LibrarySettingDialog.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/KeyCode.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ImageLayout.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <StdDlgContentArea>
+            <CheckList id="watchedCheckmark" checkedState="[true,false]" vertFocusAnimationStyle="floatingFocus" translation="[0, 0]" checkedIconUri="pkg:/images/icons/checkboxChecked.png" focusedCheckedIconUri="pkg:/images/icons/checkboxChecked.png" uncheckedIconUri="pkg:/images/icons/checkboxUnchecked.png" focusedUncheckedIconUri="pkg:/images/icons/checkboxUnchecked.png" focusFootprintBitmapUri="" drawFocusFeedback="false">
+                <ContentNode role="content">
+                    <ContentNode title="Display Watched Checkmark" />
+                    <ContentNode title="Use Landscape (Wide) Images" />
+                </ContentNode>
+            </CheckList>
+        </StdDlgContentArea>
+    </children>
+</component>
+<!--//# sourceMappingURL=./LibrarySettingDialog.xml.map -->

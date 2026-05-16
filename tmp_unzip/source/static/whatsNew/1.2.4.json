@@ -1,0 +1,10 @@
+[
+  {
+    "description": "Fixed video resolution detection - movies now show correct 1080p/1440p/4K labels on the details screen",
+    "author": "JellyVibe Team"
+  },
+  {
+    "description": "Fixed movies displaying 720p instead of 1080p due to coded height vs display height differences",
+    "author": "JellyVibe Team"
+  }
+]

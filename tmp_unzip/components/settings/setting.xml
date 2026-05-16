@@ -1,0 +1,7 @@
+<component name="Setting" extends="ContentNode">
+    <interface>
+        <field id="type" type="string" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+</component>
+<!--//# sourceMappingURL=./setting.xml.map -->

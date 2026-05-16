@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="StreamDropdown" extends="Group">
+    <interface>
+        <field id="content" type="node" onChange="contentChanged" />
+        <field id="selectedIndex" type="integer" value="-1" alwaysNotify="true" />
+        <field id="anchorX" type="integer" value="0" />
+        <field id="anchorY" type="integer" value="780" />
+        <field id="itemWidth" type="integer" value="320" />
+        <function name="show" />
+        <function name="hide" />
+    </interface>
+    <script type="text/brightscript" uri="StreamDropdown.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Group id="wrapper">
+            <Rectangle id="bg" color="#0a0518" width="320" height="100" />
+            <Rectangle id="border" color="#0a0518" width="320" height="100" translation="[0, 0]" visible="false" />
+            <MarkupGrid id="list" itemComponentName="StreamDropdownItem" numColumns="1" numRows="1" itemSpacing="[0, 0]" itemSize="[320, 64]" translation="[0, 1]" drawFocusFeedback="false" vertFocusAnimationStyle="floatingFocus" />
+        </Group>
+        <Animation id="slideAnim" duration="0.2" repeat="false" easeFunction="easeout">
+            <FloatFieldInterpolator id="fadeInterp" key="[0.0, 1.0]" keyValue="[0.0, 1.0]" fieldToInterp="wrapper.opacity" />
+            <Vector2DFieldInterpolator id="moveInterp" key="[0.0, 1.0]" keyValue="[[0, 0], [0, 0]]" fieldToInterp="wrapper.translation" />
+        </Animation>
+    </children>
+</component>
+<!--//# sourceMappingURL=./StreamDropdown.xml.map -->

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="ExpandingLabel" extends="Group">
+    <interface>
+        <field id="fontSize" type="int" value="0" />
+        <field id="padding" type="array" value="[-1, -1]" />
+        <field id="text" type="string" onChange="onTextChange" />
+        <field id="backgroundColor" type="color" value="" onChange="onBackgroundColorChange" />
+        <field id="horizAlign" type="string" />
+        <field id="alignmentSide" type="string" value="" />
+        <field id="maxWidth" type="int" value="0" />
+        <field id="horizOffset" type="int" value="0" />
+        <field id="icon" type="string" onChange="onIconChange" />
+        <field id="iconAlign" type="string" onChange="onIconAlignChange" />
+        <field id="iconWidth" type="int" value="0" onChange="onIconWidthChange" />
+        <field id="iconHeight" type="int" value="0" onChange="onIconHeightChange" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/Buttons/ExpandingLabel.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Rectangle id="background">
+            <LayoutGroup id="textLabelContainer" layoutDirection="horiz" horizAlignment="left" itemSpacings="[20]" />
+        </Rectangle>
+    </children>
+</component>
+<!--//# sourceMappingURL=./ExpandingLabel.xml.map -->

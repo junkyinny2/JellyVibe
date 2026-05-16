@@ -1,27 +1,47 @@
 # Roku Deployment PowerShell Script
-# This script builds the Jellyfin Roku app and deploys it to your device.
+# This script builds the Jellyfin Roku app and deploys to your device.
+# Usage: .\deploy_roku.ps1 [-Target "living"|"bedroom"]
 
-$RokuIP = "192.168.1.196"
+param(
+    [string]$Target = ""
+)
+
 $RokuPass = "whit"
 $ConfigFile = "bsconfig.deploy.json"
 
+$RokuUser = "rokudev"
 if (Test-Path $ConfigFile) {
     try {
         $config = Get-Content $ConfigFile -Raw | ConvertFrom-Json
-        if ($config.host) { $RokuIP = $config.host }
         if ($config.password) { $RokuPass = $config.password }
-        if ($config.username) { $RokuUser = $config.username } else { $RokuUser = "rokudev" }
+        if ($config.username) { $RokuUser = $config.username }
         Write-Host "[INFO] Loaded deployment config from $ConfigFile" -ForegroundColor Gray
     } catch {
         Write-Host "[WARNING] Could not parse $ConfigFile. Using fallbacks." -ForegroundColor Yellow
-        $RokuUser = "rokudev"
     }
-} else {
-    $RokuUser = "rokudev"
 }
 
 Write-Host ""
 Write-Host "=== JellyVibe Deployment ===" -ForegroundColor Yellow
+
+# Select Roku target
+if ($Target -eq "") {
+    Write-Host "Select Roku target:"
+    Write-Host "  1) 192.168.1.196 (Living Room)"
+    Write-Host "  2) 192.168.1.181 (Bedroom)"
+    Write-Host ""
+    $choice = Read-Host "Enter 1 or 2"
+    switch ($choice) {
+        "1" { $RokuIP = "192.168.1.196" }
+        "2" { $RokuIP = "192.168.1.181" }
+        default { $RokuIP = "192.168.1.196" }
+    }
+} else {
+    switch -Wildcard ($Target.ToLower()) {
+        "bedroom" { $RokuIP = "192.168.1.181" }
+        default   { $RokuIP = "192.168.1.196" }
+    }
+}
 Write-Host "Target: $RokuIP" -ForegroundColor Gray
 Write-Host "Config: $ConfigFile" -ForegroundColor Gray
 

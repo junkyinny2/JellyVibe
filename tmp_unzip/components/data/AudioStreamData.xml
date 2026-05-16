@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="AudioStreamData" extends="ContentNode">
+    <interface>
+        <field id="hasLyrics" type="boolean" />
+        <field id="lyricData" type="assocarray" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+</component>
+<!--//# sourceMappingURL=./AudioStreamData.xml.map -->

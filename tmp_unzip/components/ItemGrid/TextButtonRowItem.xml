@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TextButtonRowItem" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="onContentChange" />
+        <field id="focusPercent" type="float" onChange="onFocusPercentChange" />
+        <field id="focused" type="boolean" onChange="onFocusChanged" />
+        <field id="isRowFocused" type="boolean" value="false" onChange="onIsRowFocusedChanged" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/ItemGrid/TextButtonRowItem.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Poster id="focusBackground" width="240" height="44" uri="pkg:/images/9patch/filled-rounded.9.png" blendColor="#01A4DC" opacity="0" translation="[0, 8]" />
+        <Poster id="backArrow" width="30" height="30" translation="[15, 15]" visible="false" loadDisplayMode="limitSize" uri="pkg:/images/icons/back_white.png" />
+        <Poster id="icon" width="40" height="40" translation="[60, 10]" visible="false" loadDisplayMode="limitSize" />
+        <Label id="label" width="240" height="60" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" color="#FFFFFF" />
+        <Rectangle id="underline" width="200" height="3" translation="[20, 56]" color="#FFFFFF" opacity="0" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./TextButtonRowItem.xml.map -->

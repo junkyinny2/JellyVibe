@@ -1,0 +1,2 @@
+
+'//# sourceMappingURL=./SettingType.brs.map

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TVEpisode" extends="JFContentItem">
+    <interface>
+        <field id="fullNameWithShowTitle" type="string" />
+        <function name="setWatched" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/data/TVEpisode.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/Image.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ImageType.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/sdk.brs" />
+</component>
+<!--//# sourceMappingURL=./TVEpisode.xml.map -->

@@ -1,0 +1,106 @@
+'import "pkg:/source/enums/ItemType.bs"
+'import "pkg:/source/enums/String.bs"
+'import "pkg:/source/utils/misc.bs"
+
+sub setFields()
+    if not isValid(m.top.json) then
+        return
+    end if
+    json = m.top.json
+    m.top.favorite = chainLookup(json, "UserData.isFavorite")
+    m.top.watched = chainLookup(json, "UserData.played")
+    setItemSubTitle(json)
+end sub
+
+sub setPoster()
+    if m.top.image <> invalid
+        m.top.posterURL = m.top.image.url
+    else
+        m.top.posterURL = ""
+    end if
+end sub
+
+sub setItemSubTitle(json as object)
+    if isStringEqual(m.top.type, "audio")
+        if isChainValid(json, "AlbumArtist")
+            m.top.SubTitle = chainLookup(json, "AlbumArtist")
+        end if
+        if not isChainValid(json, "Album") then
+            return
+        end if
+        if m.top.SubTitle = ""
+            m.top.SubTitle = json.Album
+            return
+        end if
+        m.top.SubTitle = (bslib_toString(m.top.SubTitle) + " - " + bslib_toString(json.Album))
+        return
+    end if
+    if isStringEqual(m.top.type, "program")
+        localStartDate = createObject("roDateTime")
+        localStartDate.FromISO8601String(json.StartDate)
+        localStartDate.ToLocalTime()
+        m.top.SubTitle = (bslib_toString(localStartDate.asDateStringLoc("short")) + " " + bslib_toString(localStartDate.asTimeStringLoc("short")))
+        return
+    end if
+    if isStringEqual(m.top.type, "movie")
+        if isChainValid(json, "ProductionYear")
+            m.top.SubTitle = chainLookup(json, "ProductionYear")
+        end if
+        if isChainValid(json, "OfficialRating")
+            m.top.Rating = chainLookup(json, "OfficialRating")
+            if m.top.SubTitle = ""
+                m.top.SubTitle = m.top.Rating
+                return
+            end if
+            m.top.SubTitle = (bslib_toString(m.top.SubTitle) + " - " + bslib_toString(m.top.Rating))
+        end if
+        return
+    end if
+    if isStringEqual(m.top.type, "musicalbum")
+        if isChainValid(json, "AlbumArtist")
+            m.top.SubTitle = chainLookup(json, "AlbumArtist")
+        end if
+        return
+    end if
+    if isStringEqual(m.top.type, "playlist")
+        if isChainValid(json, "RecursiveItemCount")
+            m.top.SubTitle = (bslib_toString(chainLookup(json, "RecursiveItemCount")) + " items")
+        end if
+        return
+    end if
+    if isStringEqual(m.top.type, "series")
+        if not isChainValid(json, "ProductionYear") then
+            return
+        end if
+        m.top.SubTitle = chainLookup(json, "ProductionYear")
+        if isChainValid(json, "EndDate")
+            m.top.SubTitle += (" - " + bslib_toString(LEFT(chainLookup(json, "EndDate"), 4)))
+        end if
+        return
+    end if
+end sub
+
+sub setWatched(isWatched as boolean, unplayedItemCount = 0 as integer)
+    if not isValid(m.top.json) then
+        return
+    end if
+    json = m.top.json
+    if isChainValid(json, "UserData.Played")
+        json.UserData.AddReplace("Played", isWatched)
+        json.UserData.AddReplace("PlaybackPositionTicks", 0)
+        if isWatched
+            json.UserData.AddReplace("UnplayedItemCount", 0)
+        else
+            if unplayedItemCount = 0
+                if isValid(json.RecursiveItemCount)
+                    json.UserData.AddReplace("UnplayedItemCount", json.RecursiveItemCount)
+                end if
+            else
+                json.UserData.AddReplace("UnplayedItemCount", unplayedItemCount)
+            end if
+        end if
+        m.top.json = json
+    end if
+    m.top.watched = isWatched
+end sub
+'//# sourceMappingURL=./SearchData.brs.map

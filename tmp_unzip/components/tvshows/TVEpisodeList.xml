@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TVEpisodeList" extends="MarkupGrid">
+    <interface>
+        <field id="objects" type="assocarray" onChange="setupRows" />
+        <field id="escapeButton" type="string" alwaysNotify="true" />
+        <field id="doneLoading" type="boolean" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/tvshows/TVEpisodeList.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/AnimationControl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Rectangle id="scrollBar" width="6" height="390" translation="[1650, 0]">
+            <Rectangle id="thumb" height="100" width="6" />
+        </Rectangle>
+        <Animation id="scrollBarThumbSlideAnimation" duration=".4" repeat="false">
+            <Vector2DFieldInterpolator id="scrollBarThumbSlideInterpolator" key="[0.0, 1.0]" keyValue="[[0, 0], [0, 0]]" fieldToInterp="thumb.translation" />
+        </Animation>
+    </children>
+</component>
+<!--//# sourceMappingURL=./TVEpisodeList.xml.map -->

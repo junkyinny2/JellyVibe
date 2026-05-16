@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="LoadChannelsTask" extends="Task">
+    <interface>
+        <field id="totalRecordCount" type="integer" value="0" />
+        <field id="filter" type="string" value="" />
+        <field id="searchTerm" type="string" value="" />
+        <field id="sortField" type="string" value="" />
+        <field id="sortAscending" type="boolean" value="true" />
+        <field id="nameStartsWith" type="string" value="" />
+        <field id="recursive" type="boolean" value="true" />
+        <field id="channels" type="array" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/liveTv/LoadChannelsTask.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/sdk.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+</component>
+<!--//# sourceMappingURL=./LoadChannelsTask.xml.map -->

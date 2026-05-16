@@ -1,0 +1,387 @@
+'import "pkg:/source/enums/ColorPalette.bs"
+'import "pkg:/source/enums/ImageLayout.bs"
+'import "pkg:/source/enums/PosterLoadStatus.bs"
+'import "pkg:/source/utils/config.bs"
+'import "pkg:/source/utils/controlStyle.bs"
+'import "pkg:/source/utils/misc.bs"
+
+sub init()
+    m.itemPoster = m.top.findNode("itemPoster")
+    m.itemIcon = m.top.findNode("itemIcon")
+    m.posterText = m.top.findNode("posterText")
+    m.titleLabel = m.top.findNode("titleLabel")
+    m.titleScroll = m.top.findNode("titleScroll")
+    m.posterText.font.size = 30
+    m.titleLabel.font.size = 25
+    m.titleScroll.font.size = 25
+    m.backdrop = m.top.findNode("backdrop")
+    m.playedIndicator = m.top.findNode("playedIndicator")
+    m.posterGroup = m.top.findNode("posterGroup")
+    m.itemShadow = m.top.findNode("itemShadow")
+    m.focusOutline = m.top.findNode("focusOutline")
+    m.focusAnimation = m.top.findNode("focusAnimation")
+    m.translationInterpolator = m.top.findNode("translationInterpolator")
+    m.shadowTranslationInterpolator = m.top.findNode("shadowTranslationInterpolator")
+    m.gridGroup = m.top.findNode("gridGroup")
+    m.gridPosters = [
+        m.top.findNode("grid1")
+        m.top.findNode("grid2")
+        m.top.findNode("grid3")
+        m.top.findNode("grid4")
+    ]
+    m.itemPoster.observeField("loadStatus", "onPosterLoadStatusChanged")
+    ' Traverse up to find the parent component that defines showItemTitles (VisualLibraryScene)
+    parent = m.top.GetParent()
+    while isValid(parent)
+        if isValid(parent.showItemTitles)
+            m.topParent = parent
+            exit while
+        end if
+        parent = parent.GetParent()
+    end while
+    m.titleLabel.visible = false
+    m.titleScroll.visible = false
+    'Get the imageDisplayMode for these grid items
+    if isValid(m.topParent) and m.topParent.imageDisplayMode <> invalid
+        m.itemPoster.loadDisplayMode = m.topParent.imageDisplayMode
+    end if
+    if isValid(m.focusOutline)
+        m.focusOutline.blendColor = getControlAccentColor("#7B2FBE")
+    end if
+end sub
+
+sub onHeightChanged()
+    calculatedHeight = m.top.height - 12
+    showItemTitles = chainLookupReturn(m.topParent, "showItemTitles", "showonhover")
+    if not isStringEqual(showItemTitles, "hidealways")
+        if (calculatedHeight / m.top.width) > 1.8
+            calculatedHeight = m.top.width * 1.52173
+        else
+            calculatedHeight = m.top.width * 0.56307
+        end if
+    end if
+    m.itemPoster.width = m.top.width - 12
+    m.itemPoster.height = calculatedHeight
+    m.backdrop.width = m.top.width - 12
+    m.backdrop.height = calculatedHeight
+    m.posterText.height = calculatedHeight
+    m.posterText.width = m.top.width - 12
+    m.titleLabel.width = m.top.width - 12
+    m.titleScroll.maxWidth = m.top.width - 12
+    m.titleLabel.translation = [
+        0
+        calculatedHeight + 35
+    ]
+    m.titleScroll.translation = [
+        0
+        calculatedHeight + 35
+    ]
+    if isValid(m.gridGroup)
+        gridH = calculatedHeight / 2
+        for i = 0 to 3
+            if isValid(m.gridPosters[i])
+                m.gridPosters[i].height = gridH
+                if i >= 2 then
+                    m.gridPosters[i].translation = [
+                        m.gridPosters[i].translation[0]
+                        gridH
+                    ]
+                end if
+            end if
+        end for
+    end if
+    if isValid(m.focusOutline)
+        contentWidth = m.top.width - 12
+        m.focusOutline.height = calculatedHeight + 12
+        m.focusOutline.width = contentWidth + 12
+        m.focusOutline.translation = [
+            -6
+            -6
+        ]
+    end if
+    ' Place title clearly below the poster
+    m.titleLabel.translation = [
+        0
+        calculatedHeight + 35
+    ]
+    m.titleScroll.translation = [
+        0
+        calculatedHeight + 35
+    ]
+    updateAnimationOffsets()
+end sub
+
+sub onWidthChanged()
+    contentWidth = m.top.width - 12
+    m.backdrop.width = contentWidth
+    m.itemPoster.width = contentWidth
+    m.posterText.width = contentWidth
+    if isValid(m.gridGroup)
+        gridW = contentWidth / 2
+        for i = 0 to 3
+            if isValid(m.gridPosters[i])
+                m.gridPosters[i].width = gridW
+                if i mod 2 = 1 then
+                    m.gridPosters[i].translation = [
+                        gridW
+                        m.gridPosters[i].translation[1]
+                    ]
+                end if
+            end if
+        end for
+    end if
+    if isValid(m.focusOutline) then
+        m.focusOutline.width = contentWidth + 12
+    end if
+    m.titleLabel.width = contentWidth
+    ' Height for exactly 2 lines at font size 25 (~30px each with leading = ~60px).
+    ' 70px gives safe room for 2 lines without allowing a 3rd.
+    m.titleLabel.height = 70
+    m.titleScroll.maxWidth = contentWidth
+    m.itemIcon.translation = [
+        0
+        0
+    ]
+    m.playedIndicator.translation = [
+        contentWidth - m.playedIndicator.width
+        0
+    ]
+    if isValid(m.focusOutline) then
+        m.focusOutline.translation = [
+            -6
+            -6
+        ]
+    end if
+    updateAnimationOffsets()
+end sub
+
+sub itemContentChanged()
+    m.backdrop.blendColor = "#020B2A"
+    m.titleLabel.visible = false
+    ' LOCK DOWN: Logic for title visibility (2-line word wrap).
+    if isValid(m.topParent) and isValid(m.topParent.showItemTitles)
+        if LCase(m.topParent.showItemTitles) = "showalways"
+            if not m.top.itemHasFocus
+                m.titleLabel.visible = true
+            end if
+        end if
+    end if
+    itemData = m.top.itemContent
+    if not isValid(itemData) then
+        return
+    end if
+    showWatchedCheckmark = true
+    if isChainValid(itemData, "json.passedData.libraryID")
+        showWatchedCheckmark = chainLookupReturn(m.global.session, ("user.settings." + bslib_toString(itemData.json.passedData.libraryID) + "-showWatchedCheckmark"), true)
+    end if
+    m.playedIndicator.data = {
+        showWatchedCheckmark: showWatchedCheckmark
+        played: chainLookupReturn(itemData, "json.UserData.Played", false)
+        unplayedCount: chainLookupReturn(itemData, "json.UserData.UnplayedItemCount", 0)
+    }
+    m.itemPoster.uri = getPosterURL(itemData)
+    ' Grid logic for Tags
+    if isValid(m.gridGroup)
+        childCount = itemData.getChildCount()
+        if childCount > 0
+            m.gridGroup.visible = true
+            m.itemPoster.visible = false
+            for i = 0 to 3
+                if i < 4 ' Always fill 4 slots if we have at least one child
+                    child = itemData.getChild(i mod childCount)
+                    m.gridPosters[i].uri = child.posterUrl
+                    m.gridPosters[i].visible = true
+                else
+                    m.gridPosters[i].visible = false
+                end if
+            end for
+        else
+            m.gridGroup.visible = false
+            m.itemPoster.visible = true
+        end if
+    end if
+    if isValidAndNotEmpty(itemData.LookupCI("fullNameWithShowTitle"))
+        m.posterText.text = itemData.LookupCI("fullNameWithShowTitle")
+    else
+        m.posterText.text = itemData.title
+    end if
+    m.titleLabel.text = m.posterText.text
+    if isValid(m.titleScroll) then
+        m.titleScroll.text = m.posterText.text
+    end if
+    'If Poster not loaded, ensure "blue box" is shown until loaded
+    if m.itemPoster.loadStatus <> "ready"
+        m.backdrop.visible = true
+        m.posterText.visible = true
+    end if
+end sub
+
+function getPosterURL(itemData) as string
+    posterURL = itemData.PosterUrl
+    posterOrientation = chainLookupReturn(m.global, "session.user.settings.libraryPosterOrientation", "default")
+    ' If user has not set a library level setting, check the user level setting
+    if isChainValid(itemData, "json.passedData.libraryID")
+        if isChainValid(m.global.session, ("user.settings." + bslib_toString(itemData.json.passedData.libraryID) + "-useLandscapeImages"))
+            useLandscapeImages = chainLookupReturn(m.global.session, ("user.settings." + bslib_toString(itemData.json.passedData.libraryID) + "-useLandscapeImages"), false)
+            if useLandscapeImages then
+                posterOrientation = "landscape"
+            else
+                posterOrientation = "default"
+            end if
+        end if
+    end if
+    if inArray([
+        "default"
+        "portrait"
+    ], posterOrientation)
+        posterURL = itemData.PosterUrl
+    else if isValidAndNotEmpty(itemData.landscapePosterURL)
+        posterURL = itemData.landscapePosterURL
+    else if isValidAndNotEmpty(itemData.backdropURL)
+        posterURL = itemData.backdropURL
+    end if
+    ' Adjust image dimensions as needed
+    posterURL = posterURL.replace("maxHeight=720", ("maxHeight=" + bslib_toString(m.itemPoster.height)))
+    posterURL = posterURL.replace("maxHeight=331", ("maxHeight=" + bslib_toString(m.itemPoster.height)))
+    posterURL = posterURL.replace("maxWidth=1280", ("maxWidth=" + bslib_toString(m.itemPoster.width)))
+    posterURL = posterURL.replace("maxWidth=464", ("maxWidth=" + bslib_toString(m.itemPoster.width)))
+    return posterURL
+end function
+
+sub focusChanged()
+    if isValid(m.topParent) and isValid(m.topParent.showItemTitles)
+        if LCase(m.topParent.showItemTitles) = "showonhover"
+            m.titleLabel.visible = m.top.itemHasFocus
+            m.titleScroll.visible = false
+        end if
+    end if
+    if m.top.itemHasFocus
+        ' Switch to scrolling text when focused
+        m.titleLabel.visible = false
+        m.titleScroll.visible = true
+        m.titleScroll.repeatCount = -1
+        ' Set outline immediately
+        if isValid(m.focusOutline) then
+            m.focusOutline.opacity = 1.0
+        end if
+    else
+        ' Switch back to 2-line wrapped label when unfocused
+        m.titleScroll.repeatCount = 0
+        m.titleScroll.visible = false
+        showItemTitles = chainLookupReturn(m.topParent, "showItemTitles", "showonhover")
+        if showItemTitles = "showalways"
+            m.titleLabel.visible = true
+        else
+            m.titleLabel.visible = false
+        end if
+        m.focusOutline.opacity = 0.0
+        m.posterGroup.scale = [
+            1
+            1
+        ]
+        m.posterGroup.translation = [
+            0
+            0
+        ]
+        m.itemShadow.scale = [
+            1
+            1
+        ]
+        m.itemShadow.opacity = 0
+        m.itemShadow.translation = [
+            0
+            23
+        ]
+    end if
+end sub
+
+' focusPercent 0.0 to 1.0 — shadow + ring (no poster scale: MarkupGrid clips each cell, zoom was cutting edges)
+sub onFocusPercentChange()
+    applyFocusVisual(m.top.focusPercent)
+end sub
+
+sub applyFocusVisual(percent as float)
+    clampedPercent = percent
+    if clampedPercent < 0 then
+        clampedPercent = 0
+    end if
+    if clampedPercent > 1 then
+        clampedPercent = 1
+    end if
+    if isValid(m.focusOutline)
+        m.focusOutline.opacity = clampedPercent
+        ' Tighten focus ring to only surround the poster, not the title text
+        m.focusOutline.width = m.itemPoster.width + 12
+        m.focusOutline.height = m.itemPoster.height + 12
+        m.focusOutline.translation = [
+            -6
+            -6
+        ]
+    end if
+    m.itemShadow.opacity = 0.6 * clampedPercent
+    if m.top.itemHasFocus
+        m.titleLabel.visible = false
+        m.titleScroll.visible = true
+    else
+        ' Check showItemTitles setting
+        showItemTitles = chainLookupReturn(m.topParent, "showItemTitles", "showonhover")
+        if showItemTitles = "showalways"
+            m.titleLabel.visible = true
+        else
+            m.titleLabel.visible = false
+        end if
+        m.titleScroll.visible = false
+    end if
+end sub
+
+sub updateAnimationOffsets()
+    contentWidth = m.top.width - 12
+    contentHeight = m.itemPoster.height
+    m.itemShadow.width = contentWidth
+    m.itemShadow.height = contentHeight
+    m.itemShadow.translation = [
+        0
+        0
+    ]
+    m.itemShadow.scale = [
+        1.0
+        1.0
+    ]
+    m.posterGroup.scale = [
+        1.0
+        1.0
+    ]
+    m.posterGroup.translation = [
+        0
+        0
+    ]
+    ' Focus outline exactly covers the poster area - 9-patch draws border inward
+    if isValid(m.focusOutline)
+        m.focusOutline.width = contentWidth + 12
+        m.focusOutline.height = contentHeight + 12
+        m.focusOutline.translation = [
+            -6
+            -6
+        ]
+    end if
+    applyFocusVisual(m.top.focusPercent)
+end sub
+
+'Hide backdrop and text when poster loaded
+sub onPosterLoadStatusChanged()
+    if isStringEqual(m.itemPoster.loadStatus, "failed")
+        ' Image failed to load, try to fall back to default poster image
+        if not isStringEqual(m.itemPoster.uri, m.top.itemContent.PosterUrl)
+            m.itemPoster.uri = m.top.itemContent.PosterUrl
+            return
+        end if
+        ' No image loaded, ensure text is displayed
+        m.backdrop.visible = true
+        m.posterText.visible = true
+    end if
+    if isStringEqual(m.itemPoster.loadStatus, "ready")
+        m.backdrop.visible = false
+        m.posterText.visible = false
+    end if
+end sub
+'//# sourceMappingURL=./GridItemSmall.brs.map

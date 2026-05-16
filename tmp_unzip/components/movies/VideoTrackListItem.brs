@@ -1,0 +1,43 @@
+sub init()
+    m.focusBackground = m.top.findNode("focusBackground")
+    m.title = m.top.findNode("title")
+    m.description = m.top.findNode("description")
+    m.selectedIcon = m.top.findNode("selectedIcon")
+end sub
+
+sub itemContentChanged()
+    m.title.text = m.top.itemContent.title
+    m.description.text = m.top.itemContent.description
+    if m.top.itemContent.description = ""
+        m.title.translation = [
+            50
+            20
+        ]
+    end if
+    if m.top.itemContent.selected
+        m.selectedIcon.uri = m.global.constants.icons.check_white
+    else
+        m.selectedIcon.uri = ""
+    end if
+end sub
+
+'
+'Scroll description if focused
+sub focusChanged()
+    if m.top.itemHasFocus
+        m.focusBackground.opacity = 0.95
+        m.title.color = "0x000000FF"
+        m.description.color = "0x333333FF"
+        m.selectedIcon.uri = m.global.constants.icons.check_dark
+    else
+        m.focusBackground.opacity = 0.0
+        m.title.color = "0xFFFFFFFF"
+        m.description.color = "0xBBBBBBFF"
+        if m.top.itemContent.selected then
+            m.selectedIcon.uri = m.global.constants.icons.check_white
+        else
+            m.selectedIcon.uri = ""
+        end if
+    end if
+end sub
+'//# sourceMappingURL=./VideoTrackListItem.brs.map

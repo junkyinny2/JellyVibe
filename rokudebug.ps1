@@ -1,13 +1,34 @@
 # ================================
 # Roku Dev Mode Monitor
-# Connects to: 192.168.1.196:8085
 # User: rokudev
 # Pass: whit
 # Logs button presses + video traces
+# Usage: .\rokudebug.ps1 [-Target "living"|"bedroom"]
 # ================================
 
-$ip = "192.168.1.196"
+param(
+    [string]$Target = ""
+)
+
 $port = 8085
+
+if ($Target -eq "") {
+    Write-Host "Select Roku target:"
+    Write-Host "  1) 192.168.1.196 (Living Room)"
+    Write-Host "  2) 192.168.1.181 (Bedroom)"
+    Write-Host ""
+    $choice = Read-Host "Enter 1 or 2"
+    switch ($choice) {
+        "1" { $ip = "192.168.1.196" }
+        "2" { $ip = "192.168.1.181" }
+        default { $ip = "192.168.1.196" }
+    }
+} else {
+    switch -Wildcard ($Target.ToLower()) {
+        "bedroom" { $ip = "192.168.1.181" }
+        default   { $ip = "192.168.1.196" }
+    }
+}
 
 $target = "$ip`:$port"
 $logFile = Join-Path $PSScriptRoot ("roku_monitor_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".log")

@@ -1,0 +1,117 @@
+'import "pkg:/source/enums/ColorPalette.bs"
+'import "pkg:/source/enums/KeyCode.bs"
+'import "pkg:/source/utils/misc.bs"
+
+sub init()
+    m.focusedIndex = 0
+    m.seekBar = m.top.findNode("seekBar")
+    m.thumb = m.top.findNode("thumb")
+    m.optionMarkers = m.top.findNode("optionMarkers")
+    m.seekBar.color = "#ffffff"
+    m.focusColor = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#7B2FBE")
+    m.top.observeField("focusedChild", "onFocusChange")
+end sub
+
+sub onFocusChange()
+    if m.top.isInFocusChain() then
+        m.thumb.blendColor = m.focusColor
+    else
+        m.thumb.blendColor = "#ffffff"
+    end if
+end sub
+
+sub onValueChange()
+    if not isValid(m.top.value) then
+        return
+    end if
+    selectedValue = m.top.value
+    if not isStringEqual(type(selectedValue), "roString") and not isStringEqual(type(selectedValue), "String")
+        selectedValue = selectedValue.ToStr()
+    end if
+    m.selectedValue = selectedValue.trim()
+end sub
+
+sub onOptionsChange()
+    if not isStringEqual(type(m.top.value), "roString") and not isStringEqual(type(m.top.value), "String")
+        onValueChange()
+    end if
+    m.optionMarkers.removeChildrenIndex(m.optionMarkers.getChildCount(), 0)
+    optionCount = m.top.options.Count()
+    m.optionWidth = Cint(m.seekBar.width / optionCount)
+    for i = 0 to optionCount - 1
+        group = CreateObject("roSGNode", "LayoutGroup")
+        group.layoutDirection = "vert"
+        group.horizAlignment = "center"
+        rect = CreateObject("roSGNode", "Rectangle")
+        rect.color = "#aaaaaa"
+        rect.width = 2
+        rect.height = 50
+        group.appendchild(rect)
+        rect = CreateObject("roSGNode", "Rectangle")
+        rect.width = m.optionWidth
+        rect.height = 25
+        rect.color = "0x00000000"
+        group.appendchild(rect)
+        rect = CreateObject("roSGNode", "Text")
+        rect.text = m.top.options[i]
+        if isStringEqual(m.selectedValue, rect.text) then
+            rect.color = m.focusColor
+        else
+            rect.color = "#ffffff"
+        end if
+        rect.horizAlign = "center"
+        rect.vertAlign = "center"
+        rect.width = 40
+        rect.height = 20
+        group.appendchild(rect)
+        if isStringEqual(m.selectedValue, rect.text)
+            m.focusedIndex = i
+        end if
+        setThumbLocation()
+        m.optionMarkers.appendchild(group)
+    end for
+end sub
+
+sub setThumbLocation()
+    m.thumb.translation = [
+        Cint(m.optionWidth / 2) - Cint(m.thumb.width / 2) + (m.optionWidth * m.focusedIndex)
+        -7
+    ]
+end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then
+        return false
+    end if
+    if isStringEqual(key, "right")
+        newLeftPosition = m.thumb.translation[0] + m.optionWidth
+        if newLeftPosition > m.seekBar.width then
+            return false
+        end if
+        m.focusedIndex++
+        m.thumb.translation = [
+            newLeftPosition
+            -7
+        ]
+        return true
+    end if
+    if isStringEqual(key, "left")
+        newLeftPosition = m.thumb.translation[0] - m.optionWidth
+        if newLeftPosition < 0 then
+            return false
+        end if
+        m.focusedIndex--
+        m.thumb.translation = [
+            newLeftPosition
+            -7
+        ]
+        return true
+    end if
+    if isStringEqual(key, "OK")
+        selectedOption = m.top.options[m.focusedIndex]
+        m.top.value = selectedOption.toStr()
+        return true
+    end if
+    return false
+end function
+'//# sourceMappingURL=./Slider.brs.map

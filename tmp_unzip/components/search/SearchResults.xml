@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="searchResults" extends="JFScreen">
+    <interface>
+        <field id="query" type="string" alwaysNotify="true" />
+        <field id="selectedItem" type="node" alwaysNotify="true" />
+        <field id="quickPlayNode" type="node" alwaysNotify="true" />
+        <field id="imageDisplayMode" type="string" value="" />
+        <field id="searchAlpha" type="string" alias="SearchBox.search_values" alwaysNotify="true" onChange="searchMedias" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/search/SearchResults.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/deviceCapabilities.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/CompatibilityBypass.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/sdk.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/PlaybackMethod.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ViewLoadStatus.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/TaskControl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ItemType.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/Items.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/SubtitleSelection.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/Image.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ImageType.brs" />
+    <children>
+        <Rectangle width="1920" height="1080" color="#020B2A" opacity="0.75" />
+        <LayoutGroup layoutDirection="horiz" id="SearchAlphabox" translation="[70, 120]">
+            <SearchBox id="SearchBox" visible="true" focusable="true" />
+        </LayoutGroup>
+        <LayoutGroup layoutDirection="vert" id="searchResults" translation="[470, 150]">
+            <Text id="SearchHelpText" text="" />
+            <SearchRow id="searchRow" itemComponentName="GridItemMedium" visible="true" itemSize="[1350, 360]" rowItemSpacing="[ [40, 0] ]" itemSpacing="[0, 60]" numColumns="1" vertFocusAnimationStyle="fixed" numRows="2" rowSize="3" showRowLabel="[true]" showRowCounter="[true]" focusable="true" />
+        </LayoutGroup>
+        <OptionsSlider id="options" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./SearchResults.xml.map -->

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="SongItem" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="itemContentChanged" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/music/SongItem.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <LayoutGroup layoutDirection="horiz" horizAlignment="left" itemSpacings="[20]" translation="[0, 0]">
+            <Text id="trackNumber" horizAlign="left" vertAlign="center" font="font:SmallSystemFont" width="80" height="50" />
+            <ScrollingText id="itemText" horizAlign="left" vertAlign="center" font="font:SmallSystemFont" maxWidth="1280" height="50" />
+            <Text id="tracklength" horizAlign="right" vertAlign="center" font="font:SmallSystemFont" width="120" height="50" />
+            <Text id="playCount" horizAlign="right" vertAlign="center" font="font:SmallSystemFont" width="80" height="50" />
+        </LayoutGroup>
+    </children>
+</component>
+<!--//# sourceMappingURL=./SongItem.xml.map -->

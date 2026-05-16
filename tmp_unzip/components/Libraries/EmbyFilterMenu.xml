@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="EmbyFilterMenu" extends="Group">
+    <interface>
+        <field id="active" type="boolean" value="false" onChange="onActiveChange" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/Libraries/EmbyFilterMenu.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Rectangle id="background" width="1920" height="280" color="#0D0D0D" opacity="0.92" />
+        <Group id="filterContainer" translation="[80, 20]">
+            <Label text="Resolution" font="font:SmallBoldSystemFont" color="#AAAAAA" translation="[0, 0]" />
+            <LabelList id="resList" translation="[0, 30]" itemSize="[220, 50]" itemSpacing="[0, 0]" color="#FFFFFF" focusedColor="#00A4DC" numRows="4" />
+            <Label text="Year" font="font:SmallBoldSystemFont" color="#AAAAAA" translation="[260, 0]" />
+            <LabelList id="yearList" translation="[260, 30]" itemSize="[220, 50]" itemSpacing="[0, 0]" color="#FFFFFF" focusedColor="#00A4DC" numRows="4" />
+            <Label text="Tag" font="font:SmallBoldSystemFont" color="#AAAAAA" translation="[520, 0]" />
+            <LabelList id="tagList" translation="[520, 30]" itemSize="[220, 50]" itemSpacing="[0, 0]" color="#FFFFFF" focusedColor="#00A4DC" numRows="4" />
+        </Group>
+        <Animation id="unfoldAnimation" duration="0.4" repeat="false" easeFunction="linear">
+            <FloatFieldInterpolator key="[0.0, 1.0]" keyValue="[0.0, 1.0]" fieldToInterp="background.opacity" />
+        </Animation>
+    </children>
+</component>
+<!--//# sourceMappingURL=./EmbyFilterMenu.xml.map -->

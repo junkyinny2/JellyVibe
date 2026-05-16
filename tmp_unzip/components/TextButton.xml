@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TextButton" extends="Group" focusable="true">
+    <interface>
+        <field id="background" type="color" />
+        <field id="focusBackground" type="color" />
+        <field id="focusBorder" type="color" />
+        <field id="iconBlendColor" type="color" />
+        <field id="focusIconBlendColor" type="color" />
+        <field id="textColor" type="color" />
+        <field id="focusTextColor" type="color" />
+        <field id="text" type="string" value="" />
+        <field id="padding" type="integer" value="-1" />
+        <field id="height" type="integer" />
+        <field id="width" type="integer" />
+        <field id="fontSize" type="integer" value="24" />
+        <field id="icon" type="string" value="" />
+        <field id="focusIcon" type="string" value="" />
+        <field id="iconSide" type="string" value="" />
+        <field id="selected" type="boolean" value="false" />
+        <field id="focus" type="boolean" />
+        <field id="disabled" type="boolean" />
+        <field id="escape" type="string" value="" />
+        <field id="enableBorder" type="boolean" value="true" />
+        <field id="scrollDelay" type="float" value="1.5" />
+        <field id="bold" type="boolean" value="false" />
+        <field id="buttonSelected" type="integer" alwaysNotify="true" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/TextButton.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/controlStyle.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/ColorPalette.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Poster id="buttonBackground" uri="pkg:/images/9patch/filled-rounded.9.png" />
+        <Poster id="buttonBorder" uri="pkg:/images/9patch/border-6px.9.png" />
+        <Poster id="buttonIcon" />
+        <Label id="buttonText" vertAlign="center" font="font:MediumSystemFont" horizAlign="left" />
+        <ScrollingText id="buttonTextScrolling" color="#FFFFFF" font="font:MediumSystemFont" vertAlign="center" repeatCount="-1" visible="false" />
+        <Timer id="scrollDelayTimer" duration="1.5" repeat="false" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./TextButton.xml.map -->

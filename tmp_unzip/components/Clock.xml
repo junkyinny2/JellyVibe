@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="Clock" extends="Group">
+    <interface>
+        <function name="getCurrentTime" />
+        <function name="getFormattedTime" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/Clock.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/misc.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/parsedUrl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/config.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/session.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/String.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/LiveTVScreen.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/userauth.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api/baserequest.brs" />
+    <script type="text/brightscript" uri="pkg:/source/enums/TimerControl.brs" />
+    <script type="text/brightscript" uri="pkg:/source/bslib.brs" />
+    <children>
+        <Text id="clockTime" font="font:SmallBoldSystemFont" horizAlign="right" vertAlign="center" height="64" width="200" />
+        <Timer id="currentTimeTimer" repeat="true" duration="1" />
+    </children>
+</component>
+<!--//# sourceMappingURL=./Clock.xml.map -->

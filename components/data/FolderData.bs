@@ -10,6 +10,12 @@ sub setFields()
     m.top.Type = "Folder"
 
     m.top.iconUrl = "pkg:/images/media_type_icons/folder_white.png"
+    
+    ' Set full path as subtitle if available
+    if isValid(json.path) and json.path <> ""
+        m.top.shortdescriptionline1 = json.path
+    end if
+
     ' This is a temporary measure to avoid displaying landscape photos
     ' in GridItem components that only support portrait. It will be fixed
     ' after the ItemGrid is reworked.
@@ -27,6 +33,11 @@ sub setPoster()
     else if isValid(m.top.json.ImageTags) and m.top.json.ImageTags.Primary <> invalid
         imgParams = { "maxHeight": 440, "maxWidth": 295, "Tag": m.top.json.ImageTags.Primary }
         m.top.posterURL = ImageURL(m.top.json.id, "Primary", imgParams)
+    end if
+
+    ' Fallback to folder icon if no poster found - ensures proper aspect ratio display
+    if not isValidAndNotEmpty(m.top.posterURL)
+        m.top.posterURL = m.top.iconUrl
     end if
 end sub
 
