@@ -4,7 +4,7 @@ A feature-enhanced fork of the Jellyfin Roku client, rebranded as JellyVibe with
 
 ## Version
 
-Current Release: **1.2.5** (2026-05-13)
+Current Release: **1.2.6** (2026-05-15)
 
 ---
 

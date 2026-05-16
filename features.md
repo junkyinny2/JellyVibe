@@ -4,6 +4,7 @@ Functional additions and UX changes in this fork versus upstream Jellyfin Roku s
 
 ## Version History
 
+- **1.2.6** (2026-05-15) - Version bump
 - **1.2.5** (2026-05-13) - Dropdown fixes, Tags menu improvements
 - **1.2.4** (2026-05-12) - Video resolution detection fix
 - **1.2.3** (2026-05-12) - Focus padding system, navigation reentry fixes, UI polish

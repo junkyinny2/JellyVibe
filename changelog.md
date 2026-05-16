@@ -8,6 +8,13 @@ Difference tracker between this fork and upstream Jellyfin Roku source.
 
 ---
 
+## Version 1.2.6 (2026-05-15)
+
+### Version Bump
+- Version bump to 1.2.6
+
+---
+
 ## Version 1.2.5 (2026-05-13)
 
 ### Stream Dropdown Component

@@ -1,7 +1,7 @@
 {
   "name": "jellyvibe",
   "type": "module",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Official Roku app for Jellyvibe media server",
   "dependencies": {
     "@rokucommunity/bslib": "0.1.1",
