@@ -28,6 +28,13 @@ sub init()
     m.top.observeField("focusedChild", "focusChanged")
     m.top.enableRenderTracking = true
     m.top.observeField("renderTracking", "renderChanged")
+
+    ' Load Audio Selector component
+    try
+        var audioSelector = import("pkg:/source/components/Libraries/AudioSelector.bs")
+    catch e
+        msgbox("Error importing Audio Selector: [" + e.description + "]")
+    end try
 end sub
 
 '
