@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="VersionSelectorItem" extends="Group">
+  <script type="text/brightscript" uri="VersionSelectorItem.bs" />
+  <interface>
+    <field id="itemContent" type="node" />
+    <field id="focusPercent" type="float" />
+    <field id="itemHasFocus" type="boolean" />
+    <field id="index" type="integer" />
+    <field id="width" type="float" />
+    <field id="height" type="float" />
+  </interface>
+
+  <children>
+    <Rectangle id="bg" color="0x00000000" />
+    <Text id="resolution" font="font:SmallSystemFont" color="#e8e8ee" translation="[14, 2]" maxLines="1" width="292" height="24" />
+    <Text id="filename" font="font:SmallSystemFont" color="#888888" translation="[14, 26]" maxLines="1" width="292" height="22" />
+  </children>
+</component>

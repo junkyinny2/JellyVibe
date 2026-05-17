@@ -45,9 +45,9 @@
     <!-- Stream selector row pinned above action controls -->
     <LayoutGroup id="streamSelectorRow" layoutDirection="horiz" horizAlignment="left" itemSpacings="[15]" translation="[100, 758]">
 
-       <!-- Video column -->
+        <!-- Video column (dropdown button) -->
       <LayoutGroup layoutDirection="vert" itemSpacings="[4]">
-        <Text id="videoLabel" text="Video" font="font:SmallestBoldSystemFont" color="#bbbbbb" />
+        <Text text="Video" font="font:SmallestBoldSystemFont" color="#bbbbbb" />
         <TextButton id="videoButton" iconSide="right" fontSize="22" padding="15"
           icon="pkg:/images/icons/dropdown-dark.png" focusIcon="pkg:/images/icons/dropdown-light.png"
           text="" height="48" width="320"
@@ -55,12 +55,12 @@
           textColor="#FFFFFF" focusTextColor="#000000" focusable="true" />
       </LayoutGroup>
 
-      <!-- Audio column -->
+        <!-- Audio column (dropdown button) -->
       <LayoutGroup layoutDirection="vert" itemSpacings="[4]">
         <Text text="Audio" font="font:SmallestBoldSystemFont" color="#bbbbbb" />
         <TextButton id="audioButton" iconSide="right" fontSize="22" padding="15"
           icon="pkg:/images/icons/dropdown-dark.png" focusIcon="pkg:/images/icons/dropdown-light.png"
-          text="" height="48" width="300"
+          text="" height="48" width="280"
           background="#55020B2A" focusBackground="#FFFFFF"
           textColor="#FFFFFF" focusTextColor="#000000" focusable="true" />
       </LayoutGroup>

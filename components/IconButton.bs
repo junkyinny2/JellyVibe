@@ -14,7 +14,6 @@ sub init()
     m.buttonIcon = m.top.findNode("buttonIcon")
     m.buttonSpinner = m.top.findNode("buttonSpinner")
     m.buttonText = m.top.findNode("buttonText")
-    m.buttonTextScrolling = m.top.findNode("buttonTextScrolling")
     m.scrollTimer = m.top.findNode("scrollTimer")
 
     if isValid(m.scrollTimer)
@@ -188,21 +187,7 @@ sub onFocusChanged()
             m.scrollTimer.control = "start"
         else
             m.scrollTimer.control = "stop"
-            ' Reset to normal text when focus is lost
-            m.buttonText.visible = true
-            m.buttonTextScrolling.visible = false
         end if
-    end if
-end sub
-
-sub onScrollTimerFire()
-    ' Only scroll if text is actually long and we still have focus
-    if hasButtonFocus() and isValid(m.buttonText) and m.buttonText.text <> ""
-        ' We only switch to scrolling if the text is long?
-        ' Actually the user asked for it, so we'll just do it.
-        m.buttonText.visible = false
-        m.buttonTextScrolling.text = m.top.text
-        m.buttonTextScrolling.visible = true
     end if
 end sub
 
@@ -347,12 +332,6 @@ sub setJellyRockLayout()
     m.buttonText.vertAlign = "top"
     m.buttonText.height = 70 ' Increased to accommodate 3 lines
     m.buttonText.translation = [0, buttonHeight + (FOCUS_BORDER_OFFSET * 2)]
-
-    if isValid(m.buttonTextScrolling)
-        m.buttonTextScrolling.maxWidth = m.buttonText.width
-        m.buttonTextScrolling.height = 34 ' Scrolling text is usually one line
-        m.buttonTextScrolling.translation = m.buttonText.translation
-    end if
 
     if m.buttonTextBackground <> invalid
         m.buttonTextBackground.width = buttonWidth

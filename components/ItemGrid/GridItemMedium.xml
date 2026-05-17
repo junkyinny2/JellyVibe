@@ -16,8 +16,8 @@
         <PlayedCheckmark id="playedIndicator" translation="[340, 22]" />
       </Group>
 
-      <ScrollingText id="title" horizAlign="left" vertAlign="bottom" font="font:SmallBoldSystemFont" height="34" maxWidth="400" repeatCount="0" />
-      <ScrollingText id="itemTextExtra" horizAlign="left" vertAlign="center" font="font:SmallBoldSystemFont" height="32" maxWidth="400" color="#777777FF" repeatCount="0" />
+      <Label id="title" horizAlign="left" vertAlign="bottom" font="font:SmallBoldSystemFont" height="34" />
+      <Label id="itemTextExtra" horizAlign="left" vertAlign="center" font="font:SmallBoldSystemFont" height="32" color="#777777FF" />
 
       <!-- Shadow and focus animation -->
       <Animation id="focusAnimation" duration="0.2" repeat="false" easeFunction="linear">

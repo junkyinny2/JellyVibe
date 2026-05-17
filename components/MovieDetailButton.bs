@@ -72,9 +72,6 @@ sub setIconSize()
             m.buttonIcon.translation = [m.padding, ((height - m.buttonIcon.height) / 2)]
             m.buttonText.translation = [m.padding + m.buttonIcon.width + 20, 0]
         end if
-
-        ' Set text max width
-        m.buttonText.maxWidth = m.width - m.padding - m.buttonIcon.width - 40
     end if
 end sub
 

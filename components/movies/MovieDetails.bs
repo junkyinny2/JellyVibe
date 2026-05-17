@@ -206,20 +206,24 @@ sub init()
     m.selectedSelectorIndex = 0
 
     traceStep("MOVIE_TRACE", "MovieDetails.init selectorNodes lookup start")
-    m.selectorNodes = [
+        m.selectorNodes = [
         m.top.findNode("videoButton"),
         m.top.findNode("audioButton"),
         m.top.findNode("subtitleButton")
     ]
     traceStep("MOVIE_TRACE", "MovieDetails.init selectorNodes lookup end")
 
-    ' Inline dropdowns for stream selection
+        ' Video dropdown (floating popover)
     m.videoDropdown = m.top.findNode("videoDropdown")
+    if isValid(m.videoDropdown) then m.videoDropdown.observeField("selectedIndex", "onVideoDropdownSelect")
+
+    ' Audio dropdown (floating popover)
     m.audioDropdown = m.top.findNode("audioDropdown")
+    if isValid(m.audioDropdown) then m.audioDropdown.observeField("selectedIndex", "onAudioDropdownSelect")
+
+    ' Subtitle dropdown (floating popover)
     m.subtitleDropdown = m.top.findNode("subtitleDropdown")
-    m.videoDropdown.observeField("selectedIndex", "onVideoDropdownSelect")
-    m.audioDropdown.observeField("selectedIndex", "onAudioDropdownSelect")
-    m.subtitleDropdown.observeField("selectedIndex", "onSubtitleDropdownSelect")
+    if isValid(m.subtitleDropdown) then m.subtitleDropdown.observeField("selectedIndex", "onSubtitleDropdownSelect")
     m.activeSelectorIndex = -1
 
     m.previouslySelectedButtonIndex = -1
@@ -427,7 +431,7 @@ sub updateFocus()
     ' Row 2: Selectors â€” set focus field AFTER SGN focus has moved
     for i = 0 to m.selectorNodes.Count() - 1
         node = m.selectorNodes[i]
-        if isValid(node)
+        if isValid(node) and i = 2
             if m.focusRow = 1 and m.selectedSelectorIndex = i
                 node.focus = true
             else
@@ -526,11 +530,11 @@ sub openSelectorOptionsByIndex(selectorIndex as integer)
 
     m.activeSelectorIndex = selectorIndex
 
-    if selectorIndex = 0
+    if selectorIndex = 0 and isValid(m.videoDropdown)
         m.videoDropdown.callFunc("show")
-    else if selectorIndex = 1
+    else if selectorIndex = 1 and isValid(m.audioDropdown)
         m.audioDropdown.callFunc("show")
-    else
+    else if selectorIndex = 2 and isValid(m.subtitleDropdown)
         m.subtitleDropdown.callFunc("show")
     end if
 
@@ -538,9 +542,18 @@ sub openSelectorOptionsByIndex(selectorIndex as integer)
 end sub
 
 sub closeAllDropdowns()
-    m.videoDropdown.callFunc("hide")
-    m.audioDropdown.callFunc("hide")
-    m.subtitleDropdown.callFunc("hide")
+    if isValid(m.videoDropdown)
+        m.videoDropdown.callFunc("hide")
+        m.videoDropdown.visible = false
+    end if
+    if isValid(m.audioDropdown)
+        m.audioDropdown.callFunc("hide")
+        m.audioDropdown.visible = false
+    end if
+    if isValid(m.subtitleDropdown)
+        m.subtitleDropdown.callFunc("hide")
+        m.subtitleDropdown.visible = false
+    end if
     m.activeSelectorIndex = -1
 end sub
 
@@ -556,18 +569,33 @@ sub onVideoDropdownSelect()
     if m.top.selectedVideoStreamId <> selectedVideo.StreamID
         m.top.selectedVideoStreamId = selectedVideo.StreamID
     end if
-    closeAllDropdowns()
-
-    ' Update button text
-    videoButton = m.top.findNode("videoButton")
-    if isValid(videoButton)
-        videoButton.text = sanitizeSelectorText(selectedVideo.Title)
-    end if
 
     ' Update video_codec label
     if isValid(selectedVideo.video_codec) and selectedVideo.video_codec <> ""
         setFieldText("video_codec", tr("Video") + ": " + selectedVideo.video_codec)
     end if
+
+    closeAllDropdowns()
+
+    videoButton = m.top.findNode("videoButton")
+    if isValid(videoButton)
+        videoButton.text = sanitizeSelectorText(selectedVideo.Title)
+    end if
+
+    ' Reload audio options for the new video stream
+    itemData = m.top.itemContent.json
+    for each mediaSource in itemData.mediaSources
+        if mediaSource.id = m.top.selectedVideoStreamId
+            itemData.mediaStreams = []
+            for i = 0 to mediaSource.mediaStreams.Count() - 1
+                itemData.mediaStreams.push(mediaSource.mediaStreams[i])
+            end for
+            SetDefaultAudioTrack(itemData)
+            SetUpAudioOptions(itemData.mediaStreams)
+            exit for
+        end if
+    end for
+    m.top.itemContent.json = itemData
 
     ' Return focus to selector row
     m.focusRow = 1
@@ -583,20 +611,17 @@ sub onAudioDropdownSelect()
     if selected >= options.audios.Count() then return
 
     selectedAudio = options.audios[selected]
-    newIndex = selectedAudio.StreamIndex
-
-    if m.top.selectedAudioStreamIndex <> newIndex
-        m.top.selectedAudioStreamIndex = newIndex
+    if m.top.selectedAudioStreamIndex <> selectedAudio.StreamIndex
+        m.top.selectedAudioStreamIndex = selectedAudio.StreamIndex
     end if
+
     closeAllDropdowns()
 
-    ' Update button text
     audioButton = m.top.findNode("audioButton")
     if isValid(audioButton)
         audioButton.text = sanitizeSelectorText(selectedAudio.Title)
     end if
 
-    ' Return focus to selector row
     m.focusRow = 1
     updateFocus()
 end sub
@@ -1048,39 +1073,6 @@ sub itemContentChanged()
         end if
     end if
 
-    videoButton = m.top.findNode("videoButton")
-    if isValid(videoButton)
-        if isValid(itemData.MediaSources)
-            ' Find the selected source and get its formatted info
-            for each source in itemData.MediaSources
-                if source.id = m.top.selectedVideoStreamId
-                    height = 0
-                    width = 0
-                    codec = ""
-                    videoRange = ""
-                    if isValidAndNotEmpty(source.mediaStreams)
-                        for each stream in source.mediaStreams
-                            if LCase(stream.Type) = "video"
-                                height = chainLookupReturn(stream, "Height", 0)
-                                width = chainLookupReturn(stream, "Width", 0)
-                                codec = chainLookupReturn(stream, "Codec", "")
-                                videoRange = chainLookupReturn(stream, "VideoRangeType", "")
-                                traceStep("MOVIE_TRACE", "MovieDetails itemContentChanged source.id=" + source.id + " height=" + stri(height).trim() + " width=" + stri(width).trim() + " codec=" + codec + " range=" + videoRange)
-                                exit for
-                            end if
-                        end for
-                    end if
-                    resStr = getDisplayResolution(height, width)
-                    codecStr = getDisplayCodec(codec)
-                    rangeStr = getDisplayVideoRange(videoRange)
-                    traceStep("MOVIE_TRACE", "MovieDetails itemContentChanged final button=" + (resStr + " " + codecStr + " " + rangeStr).trim())
-                    videoButton.text = sanitizeSelectorText((resStr + " " + codecStr + " " + rangeStr).trim())
-                    exit for
-                end if
-            end for
-        end if
-    end if
-
     ' Date Added Label
     dateAddedLabel = m.top.findNode("dateAdded")
     if isValid(dateAddedLabel) and isValid(itemData.DateCreated)
@@ -1272,15 +1264,13 @@ end sub
 sub SetUpVideoOptions(streams)
     if not isValid(streams) then return
 
+    ' Create options for user to switch between video tracks
     videos = []
-    codecDetailsSet = false
-
-    setFieldText("rotationWarning", string.EMPTY)
-
     for i = 0 to streams.Count() - 1
         if LCase(streams[i].VideoType) = VideoType.VIDEOFILE
             videoCodecForDisplay = ""
             codec = ""
+            codecDetailsSet = false
             if isValidAndNotEmpty(streams[i].mediaStreams)
 
                 ' find the first (default) video track to get the codec for the details screen
@@ -1353,16 +1343,29 @@ sub SetUpVideoOptions(streams)
     options.videos = videos
     m.options.options = options
 
-    ' Build ContentNode for inline dropdown
-    videoContent = CreateObject("roSGNode", "ContentNode")
+    ' Build ContentNode for version selector (inline expanded list)
+    versionContent = CreateObject("roSGNode", "ContentNode")
     for each v in videos
-        child = videoContent.CreateChild("ContentNode")
+        child = versionContent.CreateChild("ContentNode")
         child.title = v.Title
+        child.addField("description", "string", true)
         child.description = v.Description
+        child.addField("selected", "boolean", true)
         child.selected = v.Selected
+        child.addField("streamid", "string", true)
         child.streamid = v.StreamID
     end for
-    m.videoDropdown.content = videoContent
+    if isValid(m.videoDropdown) then m.videoDropdown.content = versionContent
+
+    videoButton = m.top.findNode("videoButton")
+    if isValid(videoButton)
+        for each v in videos
+            if v.Selected
+                videoButton.text = sanitizeSelectorText(v.Title)
+                exit for
+            end if
+        end for
+    end if
 end sub
 
 sub SetUpAudioOptions(streams)
@@ -1372,13 +1375,7 @@ sub SetUpAudioOptions(streams)
     selectedSubtitle = isChainValid(preferredSubtitle, "StreamIndex") ? preferredSubtitle.StreamIndex : SubtitleSelection.NONE
 
     audioTracks = []
-    subtitleTracks = [{
-        "StreamIndex": SubtitleSelection.NONE,
-        "json": {},
-        "Title": "None",
-        "Description": "None",
-        "Selected": selectedSubtitle = SubtitleSelection.NONE
-    }]
+    subtitleTracks = []
 
     audioStreamCount = 1
     for i = 0 to streams.Count() - 1
@@ -1396,14 +1393,14 @@ sub SetUpAudioOptions(streams)
         end if
     end for
 
-    audioCountNode = m.top.findnode("audio_codec_count")
-    if isValid(audioCountNode)
-        if audioTracks.count() > 1
-            audioCountNode.text = "+" + stri(audioTracks.Count() - 1).trim()
-        else
-            audioCountNode.text = ""
-        end if
-    end if
+    ' Add "Off (None)" at the bottom
+    subtitleTracks.push({
+        "StreamIndex": SubtitleSelection.NONE,
+        "json": {},
+        "Title": "Off (None)",
+        "Description": "",
+        "Selected": selectedSubtitle = SubtitleSelection.NONE
+    })
 
     options = {}
     if isValid(m.options.options.videos)
@@ -1413,7 +1410,17 @@ sub SetUpAudioOptions(streams)
     options.subtitles = subtitleTracks
     m.options.options = options
 
-    ' Build ContentNode for audio dropdown
+    ' Set button text
+    audioButton = m.top.findNode("audioButton")
+    if isValid(audioButton) and m.top.selectedAudioStreamIndex >= 0 and m.top.selectedAudioStreamIndex < streams.Count()
+        audioLabel = buildAudioLabel(streams[m.top.selectedAudioStreamIndex])
+        defaultIdx = getDefaultAudioTrackIndex(streams)
+        if m.top.selectedAudioStreamIndex = defaultIdx
+            audioLabel = audioLabel + " (Default)"
+        end if
+        audioButton.text = sanitizeSelectorText(audioLabel)
+    end if
+
     audioContent = CreateObject("roSGNode", "ContentNode")
     for each a in audioTracks
         child = audioContent.CreateChild("ContentNode")
@@ -1425,9 +1432,9 @@ sub SetUpAudioOptions(streams)
         child.addField("streamIndex", "integer", true)
         child.streamIndex = a.StreamIndex
     end for
-    m.audioDropdown.content = audioContent
+    if isValid(m.audioDropdown) then m.audioDropdown.content = audioContent
 
-    ' Build ContentNode for subtitle dropdown
+    ' Build ContentNode for subtitle dropdown (floating popover)
     subContent = CreateObject("roSGNode", "ContentNode")
     for each s in subtitleTracks
         child = subContent.CreateChild("ContentNode")
@@ -1442,11 +1449,6 @@ sub SetUpAudioOptions(streams)
     m.subtitleDropdown.content = subContent
 
     ' Update labels on main screen
-    audioButton = m.top.findNode("audioButton")
-    if isValid(audioButton) and m.top.selectedAudioStreamIndex >= 0 and m.top.selectedAudioStreamIndex < streams.Count()
-        audioButton.text = buildAudioLabel(streams[m.top.selectedAudioStreamIndex])
-    end if
-
     subtitleButton = m.top.findNode("subtitleButton")
     prefSub = m.global.queueManager.callFunc("getPreferredSubtitleTrack")
     if isValid(subtitleButton)
@@ -1458,7 +1460,7 @@ sub SetUpAudioOptions(streams)
                 end if
             end for
         else
-            subtitleButton.text = sanitizeSelectorText(tr("None"))
+            subtitleButton.text = sanitizeSelectorText(tr("Off (None)"))
         end if
     end if
 end sub
@@ -1638,9 +1640,9 @@ sub audioOptionsClosed()
         m.global.queueManager.callFunc("setPreferredAudioTrackName", m.options.audioStreamName)
         setFieldText("audio_codec", tr("Audio") + ": " + m.top.itemContent.json.mediaStreams[m.top.selectedAudioStreamIndex].displayTitle)
 
-        audioButton = m.top.findNode("audioButton")
-        if isValid(audioButton)
-            audioButton.text = buildAudioLabel(m.top.itemContent.json.mediaStreams[m.top.selectedAudioStreamIndex])
+        audioText = m.top.findNode("audioText")
+        if isValid(audioText)
+            audioText.text = buildAudioLabel(m.top.itemContent.json.mediaStreams[m.top.selectedAudioStreamIndex])
         end if
     end if
 
@@ -1650,7 +1652,7 @@ sub audioOptionsClosed()
         if isValid(m.options.subtitleStream)
             subtitleButton.text = sanitizeSelectorText(m.options.subtitleStream.title)
         else
-            subtitleButton.text = sanitizeSelectorText(tr("None"))
+            subtitleButton.text = sanitizeSelectorText(tr("Off (None)"))
         end if
     end if
 
@@ -1667,9 +1669,8 @@ sub videoOptionsClosed()
         if m.options.videoStreamId <> m.top.selectedVideoStreamId
             m.top.selectedVideoStreamId = m.options.videoStreamId
 
-            videoButton = m.top.findNode("videoButton")
             itemData = m.top.itemContent.json
-            if isValid(videoButton) and isValid(itemData.MediaSources)
+            if isValid(itemData.MediaSources)
                 for each source in itemData.MediaSources
                     if source.id = m.top.selectedVideoStreamId
                         height = 0
@@ -1693,10 +1694,6 @@ sub videoOptionsClosed()
                         if displayTitle <> ""
                             setFieldText("video_codec", tr("Video") + ": " + displayTitle)
                         end if
-                        resStr = getDisplayResolution(height, width)
-                        codecStr = getDisplayCodec(codec)
-                        rangeStr = getDisplayVideoRange(videoRange)
-                        videoButton.text = sanitizeSelectorText((resStr + " " + codecStr + " " + rangeStr).trim())
                         exit for
                     end if
                 end for
@@ -1756,20 +1753,6 @@ sub showExtrasSlider()
     if isValid(pplAnime) then pplAnime.control = AnimationControl.START
 end sub
 
-sub hideExtrasSlider()
-    ' Animate title strip back to its normal position and restore detail rows
-    m.inlineExtrasClosing = true
-    updateInlineDetailsRestoreTarget()
-    if isValid(m.detailsSlideAnime) then m.detailsSlideAnime.control = AnimationControl.START
-    vertSlider = m.top.findNode("VertSlider")
-    extrasFader = m.top.findNode("extrasFader")
-    pplAnime = m.top.findNode("pplAnime")
-    if isValid(vertSlider) then vertSlider.reverse = true
-    if isValid(extrasFader) then extrasFader.reverse = true
-    if isValid(pplAnime) then pplAnime.control = AnimationControl.START
-    m.inlineExtrasActive = false
-end sub
-
 sub onExtrasTargetTranslationYChanged()
     ' No-op: gridAnime removed; RowList handles own scrolling
 end sub
@@ -1802,6 +1785,20 @@ sub deactivateInlineExtrasLayout()
 
     m.inlineExtrasActive = false
     m.extrasNavigationActive = false
+end sub
+
+sub hideExtrasSlider()
+    ' Animate title strip back to its normal position and restore detail rows
+    m.inlineExtrasClosing = true
+    updateInlineDetailsRestoreTarget()
+    if isValid(m.detailsSlideAnime) then m.detailsSlideAnime.control = AnimationControl.START
+    vertSlider = m.top.findNode("VertSlider")
+    extrasFader = m.top.findNode("extrasFader")
+    pplAnime = m.top.findNode("pplAnime")
+    if isValid(vertSlider) then vertSlider.reverse = true
+    if isValid(extrasFader) then extrasFader.reverse = true
+    if isValid(pplAnime) then pplAnime.control = AnimationControl.START
+    m.inlineExtrasActive = false
 end sub
 
 sub setPrimaryControlRowsVisible(isVisible as boolean)
@@ -1918,14 +1915,20 @@ end sub
 function onKeyEvent(key as string, press as boolean) as boolean
     if not press then return false
 
-    ' If a dropdown is open, handle BACK and UP to close it
-    if m.videoDropdown.visible or m.audioDropdown.visible or m.subtitleDropdown.visible
-        if key = KeyCode.BACK or key = KeyCode.UP
+    dropdownOpen = false
+    if isValid(m.subtitleDropdown) and m.subtitleDropdown.visible then dropdownOpen = true
+    if isValid(m.videoDropdown) and m.videoDropdown.visible then dropdownOpen = true
+    if isValid(m.audioDropdown) and m.audioDropdown.visible then dropdownOpen = true
+
+    if dropdownOpen
+        if key = KeyCode.BACK
             closeAllDropdowns()
             m.focusRow = 1
             updateFocus()
             return true
         end if
+        ' Let the dropdown handle its own navigation
+        return false
     end if
 
     if key = KeyCode.UP

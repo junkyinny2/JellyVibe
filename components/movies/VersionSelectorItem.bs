@@ -2,34 +2,27 @@ import "pkg:/source/utils/config.bs"
 
 sub init()
     m.bg = m.top.findNode("bg")
-    m.check = m.top.findNode("check")
-    m.title = m.top.findNode("title")
-    m.subtitle = m.top.findNode("subtitle")
+    m.resolution = m.top.findNode("resolution")
+    m.filename = m.top.findNode("filename")
 
     m.top.observeField("itemContent", "itemContentChanged")
     m.top.observeField("focusPercent", "onFocusPercentChanged")
     m.top.observeField("width", "onWidthHeightChanged")
-    m.top.observeField("height", "onWidthHeightChanged")
 end sub
 
 sub itemContentChanged()
     itemData = m.top.itemContent
     if not isValid(itemData) then return
 
-    m.title.text = itemData.title
+    m.resolution.text = itemData.title
+    if isValid(itemData.description) and itemData.description <> ""
+        m.filename.text = itemData.description
+        m.filename.visible = true
+    else
+        m.filename.visible = false
+    end if
 
-    m.subtitle.visible = false
-    m.title.translation = [30, 16]
-
-    updateCheckState()
     updateColors()
-end sub
-
-sub updateCheckState()
-    itemData = m.top.itemContent
-    if not isValid(itemData) then return
-
-    m.check.visible = (itemData.selected = true)
 end sub
 
 sub onFocusPercentChanged()
@@ -47,27 +40,24 @@ sub updateColors()
 
     if isFocused
         m.bg.color = accentColor
-        m.title.color = "#ffffff"
-        m.subtitle.color = "#d0d0d0"
-        m.check.blendColor = "#ffffff"
+        m.resolution.color = "#ffffff"
+        m.filename.color = "#d0d0d0"
     else if isSelected
         m.bg.color = accentColor
-        m.title.color = "#ffffff"
-        m.subtitle.color = "#d0d0d0"
-        m.check.blendColor = "#ffffff"
+        m.resolution.color = "#ffffff"
+        m.filename.color = "#d0d0d0"
     else
-        m.bg.color = "#0a0518"
-        m.title.color = "#e8e8ee"
-        m.subtitle.color = "#999999"
-        m.check.blendColor = "#ffffff"
+        m.bg.color = "0x00000000"
+        m.resolution.color = "#e8e8ee"
+        m.filename.color = "#888888"
     end if
 end sub
 
 sub onWidthHeightChanged()
     m.bg.width = m.top.width
     m.bg.height = m.top.height
-    itemW = m.top.width - 40
+    itemW = m.top.width - 32
     if itemW < 50 then itemW = 50
-    m.title.width = itemW
-    m.subtitle.width = itemW
+    m.resolution.width = itemW
+    m.filename.width = itemW
 end sub

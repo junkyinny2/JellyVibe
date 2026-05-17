@@ -24,8 +24,6 @@
 
       <!-- titleLabel: 2-line wrap, shown when unfocused -->
       <Label id="titleLabel" horizAlign="center" vertAlign="top" font="font:SmallSystemFont" wrap="true" numLines="2" ellipsizeOnBoundary="true" color="0xFFFFFFFF" />
-      <!-- titleScroll: single-line autoscroll, shown when focused -->
-      <ScrollingText id="titleScroll" font="font:SmallSystemFont" color="0xFFFFFFFF" repeatCount="0" visible="false" />
 
       <!-- Shadow and focus animation -->
       <Animation id="focusAnimation" duration="0.2" repeat="false" easeFunction="linear">

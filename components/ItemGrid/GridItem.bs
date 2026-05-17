@@ -27,9 +27,6 @@ sub init()
     m.itemText.translation = [0, m.itemPoster.height + 7]
     m.itemText.visible = m.gridTitles = "showalways"
 
-    ' Add some padding space when Item Titles are always showing
-    if m.itemText.visible then m.itemText.maxWidth = 250
-
     ' grab data from ItemGrid node
     m.itemGrid = m.top.GetParent().GetParent() 'Parent is MarkupGrid and it's parent is the ItemGrid
 
@@ -138,7 +135,6 @@ sub itemContentChanged()
             m.backdrop.loadDisplayMode = "scaleToFit"
 
             m.itemText.translation = [0, m.itemPoster.height + 7]
-            m.itemText.maxWidth = 400
         end if
     else if itemData.type = "MusicArtist"
         m.itemPoster.uri = itemData.PosterUrl
@@ -190,11 +186,10 @@ sub focusChanged()
     end if
 
     if m.top.itemHasFocus
-        m.itemText.repeatCount = -1
+        
         ' Set outline immediately
         
     else
-        m.itemText.repeatCount = 0
         m.focusOutline.opacity = 0.0
         m.posterGroup.scale = [1, 1]
         m.posterGroup.translation = [0, 0]

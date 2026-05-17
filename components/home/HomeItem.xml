@@ -21,7 +21,7 @@
         <Label id="overlaidTitle" width="464" height="261" horizAlign="center" vertAlign="center" wrap="true" font="font:MediumBoldSystemFont" color="#FFFFFF" opacity="1" visible="false" />
       </Group>
 
-      <ScrollingText id="itemText" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" height="64" maxWidth="456" translation="[8,267]" repeatCount="0" />
+      <Label id="itemText" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" height="64" translation="[8,267]" />
       <Text id="itemTextExtra" horizAlign="left" vertAlign="center" font="font:SmallBoldSystemFont" height="32" width="456" translation="[8,300]" visible="false" />
 
       <Animation id="showProgressBar" duration="0.5" repeat="false" easeFunction="linear">

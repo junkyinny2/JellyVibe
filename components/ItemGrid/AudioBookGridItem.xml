@@ -12,7 +12,7 @@
       </Group>
 
       <LayoutGroup id="title_group" layoutdirection="vert" translation="[5, 305]">
-        <ScrollingText
+        <Label
           id="posterText"
           font="font:SmallBoldSystemFont"
           color="#FFFFFF"
@@ -21,7 +21,7 @@
           horizAlign="left"
           vertAlign="center" />
 
-        <ScrollingText
+        <Label
           id="subText"
           font="font:SmallBoldSystemFont"
           color="#777777FF"

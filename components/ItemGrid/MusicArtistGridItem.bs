@@ -95,9 +95,8 @@ end sub
 'Display or hide title Visibility on focus change
 sub focusChanged()
     if m.top.itemHasFocus = true
-        m.posterText.repeatCount = -1
+        
     else
-        m.posterText.repeatCount = 0
         if isValid(m.focusOutline) then m.focusOutline.opacity = 0
         m.itemShadow.opacity = 0
     end if

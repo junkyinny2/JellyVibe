@@ -91,8 +91,6 @@ sub onWidthChanged()
     m.backdrop.width = m.top.width - 12
     m.itemPoster.width = m.top.width - 12
     m.posterText.width = m.top.width - 12
-    m.title.maxWidth = m.top.width - 12
-    m.itemTextExtra.maxWidth = m.top.width - 12
 
     if isValid(m.focusOutline) then m.focusOutline.width = m.top.width
     m.playedIndicator.translation = [(m.top.width - 12) - m.playedIndicator.width, 0]
@@ -173,9 +171,6 @@ sub itemContentChanged()
         m.backdrop.width = imageDimensions[0]
         m.posterText.width = imageDimensions[0]
 
-        m.title.maxWidth = imageDimensions[0] - 16
-        m.itemTextExtra.maxWidth = imageDimensions[0] - 16
-
         m.itemPoster.height = imageDimensions[1]
         m.backdrop.height = imageDimensions[1]
         m.posterText.height = imageDimensions[1] + 40
@@ -213,13 +208,10 @@ sub focusChanged()
     end if
 
     if m.top.itemHasFocus
-        m.title.repeatCount = -1
-        m.itemTextExtra.repeatCount = -1
+        
         ' Set outline immediately
         
     else
-        m.title.repeatCount = 0
-        m.itemTextExtra.repeatCount = 0
         m.focusOutline.opacity = 0.0
         m.posterGroup.scale = [1, 1]
         m.posterGroup.translation = [0, 0]

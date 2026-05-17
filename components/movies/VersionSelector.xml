@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="VersionSelector" extends="Group">
+  <script type="text/brightscript" uri="VersionSelector.bs" />
+  <interface>
+    <field id="content" type="node" onChange="contentChanged" />
+    <field id="selectedIndex" type="integer" value="0" alwaysNotify="true" />
+    <field id="itemWidth" type="integer" value="320" />
+  </interface>
+
+  <children>
+    <Rectangle id="bg" color="#55020B2A" width="320" height="48" />
+    <Group id="wrapper" translation="[0, 0]">
+      <MarkupGrid
+        id="list"
+        itemComponentName="VersionSelectorItem"
+        numColumns="1"
+        numRows="1"
+        itemSpacing="[0, 2]"
+        itemSize="[320, 48]"
+        translation="[0, 0]"
+        drawFocusFeedback="false"
+        vertFocusAnimationStyle="floatingFocus" />
+    </Group>
+  </children>
+</component>

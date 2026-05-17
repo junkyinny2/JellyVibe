@@ -23,7 +23,7 @@
         <Text id="posterText" width="280" height="415" translation="[5,5]" horizAlign="center" vertAlign="center" ellipsizeOnBoundary="true" wrap="true" />
       </Group>
 
-      <ScrollingText id="itemText" horizAlign="center" font="font:SmallSystemFont" maxWidth="290" repeatCount="0" visible="false" />
+      <Label id="itemText" horizAlign="center" font="font:SmallSystemFont" visible="false" />
 
       <!-- Shadow and focus animation -->
       <Animation id="focusAnimation" duration="0.2" repeat="false" easeFunction="linear">

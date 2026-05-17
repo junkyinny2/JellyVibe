@@ -122,7 +122,6 @@ sub itemContentChanged()
     m.itemTextExtra.text = ""
     m.itemTextExtra.font.size = 22
 
-    m.itemText.maxWidth = itemData.imageWidth
     m.itemText.height = 34
     m.itemText.font.size = 25
     m.itemText.horizAlign = "left"
@@ -458,7 +457,6 @@ end sub
 '
 ' Enable title scrolling based on item Focus
 sub focusChanged()
-    m.itemText.repeatCount = m.top.itemHasFocus ? - 1 : 0
 
     if m.top.itemHasFocus
         if m.top.focusPercent > 0

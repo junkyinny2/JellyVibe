@@ -48,16 +48,43 @@
     </Group>
 
     <!-- Right-side icon sidebar (Emby style); Y ~ vertically centered for 6×52px tiles + gaps -->
+    <!-- Audio Selector with Dropdown - Positioned at right sidebar area -->
+    <LayoutGroup layoutDirection="horiz" id="audioSelectorGroup" translation="[1850, 376]" itemSpacings="[22]">
+      <Text id="audioLabel" font="font:LargeSystemFont" width="120" height="48" vertAlign="center" horizAlign="left" color="#FFFFFF">Audio</Text>
+    </LayoutGroup>
+
+    <!-- Dropdown Popup Menu (Overlay with z-order for floating effect) -->
+    <Alpha id="dropdownPopupAlpha" wrap="false" />
+    
+    <!-- Background rectangle for dropdown menu - dark solid, darker than page bg -->
+    <Rectangle id="dropdownMenuBackground" clipToViewfinder="false">
+      <FloatFieldInterpolator fieldToInterp="opacity" key="[0.0, 1.0]" keyValue="[0, 0.95]" />
+    </Rectangle>
+
+    <!-- Subtle rounded corners - Rectangle with slightly transparent border -->
+    <Poster id="dropdownMenuBorder" uri="" clipToViewfinder="false">
+      <FloatFieldInterpolator fieldToInterp="borderWidth" key="[0.0, 1.0]" keyValue="[0, 2]" />
+    </Poster>
+
     <Group id="rightIcons" translation="[1840, 376]" opacity="1">
-      <LayoutGroup layoutDirection="vert" itemSpacings="[4]">
+      <!-- LabelList for audio dropdown options - positioned absolutely with z-order -->
+      <LabelList id="dropdownLabelList" visible="false" clipToViewfinder="false" itemSize="[200, 40]" numRows="1">
+        <!-- Items will be populated dynamically - LabelList handles scrolling internally -->
+        <!-- Clip the 4th entry at bottom by setting proper height -->
+        <FloatFieldInterpolator fieldToInterp="height" key="[0.0, 0.4]" keyValue="[0, 1]">
+          <FloatFieldInterpolator fieldToInterp="height" key="[0.0, 1.0]" keyValue="[0, 150]" />
+        </FloatFieldInterpolator>
+      </LabelList>
+
+       <LayoutGroup layoutDirection="vert" itemSpacings="[4]">
         <LibrarySideIcon id="voiceBoxButton" iconUri="pkg:/images/icons/search-light.png" />
         <LibrarySideIcon id="sortButton" iconUri="pkg:/images/icons/options.png" />
         <LibrarySideIcon id="sortOrderButton" iconUri="pkg:/images/icons/up_white.png" />
         <LibrarySideIcon id="filterButton" iconUri="pkg:/images/icons/dotDotDot.png" />
         <LibrarySideIcon id="viewButton" iconUri="pkg:/images/icons/numberList.png" />
         <LibrarySideIcon id="librarySettingsButton" iconUri="pkg:/images/icons/settings.png" />
-      </LayoutGroup>
-    </Group>
+       </LayoutGroup>
+     </Group>
 
     <Animation id="toggleDropdownOptionsAnimation" duration="0.01" repeat="false" easeFunction="linear">
       <FloatFieldInterpolator id="dropdownOptionsFade" key="[0.0, 1.0]" keyValue="[1.00, 1.00]" fieldToInterp="rightIcons.opacity" />
@@ -92,7 +119,6 @@
     </Group>
 
     <Text translation="[0,540]" id="emptyText" font="font:LargeSystemFont" width="1910" horizAlign="center" vertAlign="center" height="64" visible="false" />
-    <LibraryFilterDialog id="options" visible="false" />
     <Animation id="backroundSwapAnimation" duration="1" repeat="false" easeFunction="linear">
       <FloatFieldInterpolator id="fadeinLoading" key="[0.0, 1.0]" keyValue="[ 0.00, 1.00 ]" fieldToInterp="backdropTransition.opacity" />
       <FloatFieldInterpolator id="fadeoutLoaded" key="[0.0, 1.0]" keyValue="[ 1.00, 0.00 ]" fieldToInterp="backdrop.opacity" />
@@ -152,6 +178,12 @@
     <field id="searchTerm" type="string" onChange="onSearchTermChanged" alwaysNotify="true" />
     <field id="alphaActive" type="boolean" value="false" />
     <field id="showItemTitles" type="string" value="" />
+    
+    <!-- Audio Dropdown Interface -->
+    <function name="openAudioDropdown" />
+    <function name="closeAudioDropdown" />
+    <function name="updateAudioOptions" />
+    <field id="audioOptionsList" type="array" />
   </interface>
 
 </component>

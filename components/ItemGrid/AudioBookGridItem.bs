@@ -63,8 +63,6 @@ end sub
 sub onWidthChanged()
     m.backdrop.width = m.top.width - 12
     m.itemPoster.width = m.top.width - 12
-    m.posterText.maxwidth = m.top.width - 12
-    m.subText.maxWidth = m.top.width - 12
 
     if isValid(m.focusOutline)
         m.focusOutline.width = m.top.width
@@ -115,9 +113,8 @@ end sub
 'Display or hide title Visibility on focus change
 sub focusChanged()
     if m.top.itemHasFocus = true
-        m.posterText.repeatCount = -1
+        
     else
-        m.posterText.repeatCount = 0
         if isValid(m.focusOutline) then m.focusOutline.opacity = 0
         m.itemShadow.opacity = 0
     end if

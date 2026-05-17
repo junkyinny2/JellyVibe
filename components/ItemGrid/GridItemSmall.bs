@@ -11,10 +11,8 @@ sub init()
     m.itemIcon = m.top.findNode("itemIcon")
     m.posterText = m.top.findNode("posterText")
     m.titleLabel = m.top.findNode("titleLabel")
-    m.titleScroll = m.top.findNode("titleScroll")
     m.posterText.font.size = 30
     m.titleLabel.font.size = 25
-    m.titleScroll.font.size = 25
     m.backdrop = m.top.findNode("backdrop")
     m.playedIndicator = m.top.findNode("playedIndicator")
 
@@ -48,7 +46,6 @@ sub init()
     end while
 
     m.titleLabel.visible = false
-    m.titleScroll.visible = false
 
     'Get the imageDisplayMode for these grid items
     if isValid(m.topParent) and m.topParent.imageDisplayMode <> invalid
@@ -79,9 +76,7 @@ sub onHeightChanged()
     m.posterText.height = calculatedHeight
     m.posterText.width = m.top.width - 12
     m.titleLabel.width = m.top.width - 12
-    m.titleScroll.maxWidth = m.top.width - 12
     m.titleLabel.translation = [0, calculatedHeight + 35]
-    m.titleScroll.translation = [0, calculatedHeight + 35]
 
     if isValid(m.gridGroup)
         gridH = calculatedHeight / 2
@@ -101,7 +96,6 @@ sub onHeightChanged()
     end if
     ' Place title clearly below the poster
     m.titleLabel.translation = [0, calculatedHeight + 35]
-    m.titleScroll.translation = [0, calculatedHeight + 35]
     updateAnimationOffsets()
 end sub
 
@@ -126,7 +120,6 @@ sub onWidthChanged()
     ' Height for exactly 2 lines at font size 25 (~30px each with leading = ~60px).
     ' 70px gives safe room for 2 lines without allowing a 3rd.
     m.titleLabel.height = 70
-    m.titleScroll.maxWidth = contentWidth
     m.itemIcon.translation = [0, 0]
     m.playedIndicator.translation = [contentWidth - m.playedIndicator.width, 0]
     if isValid(m.focusOutline) then m.focusOutline.translation = [-6, -6]
@@ -193,7 +186,6 @@ sub itemContentChanged()
     end if
 
     m.titleLabel.text = m.posterText.text
-    if isValid(m.titleScroll) then m.titleScroll.text = m.posterText.text
 
     'If Poster not loaded, ensure "blue box" is shown until loaded
     if m.itemPoster.loadStatus <> "ready"
@@ -237,22 +229,12 @@ sub focusChanged()
     if isValid(m.topParent) and isValid(m.topParent.showItemTitles)
         if LCase(m.topParent.showItemTitles) = "showonhover"
             m.titleLabel.visible = m.top.itemHasFocus
-            m.titleScroll.visible = false
         end if
     end if
 
     if m.top.itemHasFocus
-        ' Switch to scrolling text when focused
-        m.titleLabel.visible = false
-        m.titleScroll.visible = true
-        m.titleScroll.repeatCount = -1
-        ' Set outline immediately
         if isValid(m.focusOutline) then m.focusOutline.opacity = 1.0
     else
-        ' Switch back to 2-line wrapped label when unfocused
-        m.titleScroll.repeatCount = 0
-        m.titleScroll.visible = false
-        
         showItemTitles = chainLookupReturn(m.topParent, "showItemTitles", "showonhover")
         if showItemTitles = "showalways"
             m.titleLabel.visible = true
@@ -290,7 +272,6 @@ sub applyFocusVisual(percent as float)
     m.itemShadow.opacity = 0.6 * clampedPercent
     if m.top.itemHasFocus
         m.titleLabel.visible = false
-        m.titleScroll.visible = true
     else
         ' Check showItemTitles setting
         showItemTitles = chainLookupReturn(m.topParent, "showItemTitles", "showonhover")
@@ -299,7 +280,6 @@ sub applyFocusVisual(percent as float)
         else
             m.titleLabel.visible = false
         end if
-        m.titleScroll.visible = false
     end if
 end sub
 

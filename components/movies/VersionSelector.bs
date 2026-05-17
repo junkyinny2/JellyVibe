@@ -1,0 +1,57 @@
+import "pkg:/source/utils/config.bs"
+
+sub init()
+    m.bg = m.top.findNode("bg")
+    m.wrapper = m.top.findNode("wrapper")
+    m.list = m.top.findNode("list")
+
+    m.list.observeField("itemSelected", "onItemSelected")
+    m.list.observeField("hasFocus", "onFocusChanged")
+
+    ' Force initial size so parent LayoutGroups see our fixed 1-row height
+    m.top.minWidth = 320
+    m.top.minHeight = 48
+end sub
+
+sub contentChanged()
+    content = m.top.content
+    if not isValid(content) then return
+
+    w = m.top.itemWidth
+    itemH = 48
+    fixedRows = 1
+    m.list.itemSize = [w, itemH]
+    m.list.numRows = fixedRows
+    m.list.content = content
+
+    if isValid(m.bg)
+        m.bg.width = w
+        m.bg.height = fixedRows * itemH
+    end if
+
+    m.top.minWidth = w
+    m.top.minHeight = fixedRows * itemH
+
+    idx = 0
+    for i = 0 to content.getChildCount() - 1
+        child = content.getChild(i)
+        if isValid(child) and child.selected = true
+            idx = i
+            exit for
+        end if
+    end for
+    m.list.jumpToItem = idx
+end sub
+
+sub onItemSelected()
+    selected = m.list.itemSelected
+    if selected >= 0
+        m.top.selectedIndex = selected
+    end if
+end sub
+
+sub onFocusChanged()
+    if m.list.hasFocus
+        m.wrapper.setFocus(true)
+    end if
+end sub

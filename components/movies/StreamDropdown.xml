@@ -25,7 +25,8 @@
         itemSize="[320, 64]"
         translation="[0, 1]"
         drawFocusFeedback="false"
-        vertFocusAnimationStyle="floatingFocus" />
+        vertFocusAnimationStyle="floatingFocus"
+        focusable="true" />
     </Group>
 
     <Animation id="slideAnim" duration="0.2" repeat="false" easeFunction="easeout">

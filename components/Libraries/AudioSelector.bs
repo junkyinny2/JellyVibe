@@ -1,0 +1,73 @@
+import "pkg:/source/enums/AnimationControl.bs"
+import "pkg:/source/enums/ColorPalette.bs"
+
+sub init()
+    m.audioLabel = m.top.findNode("audioLabel")
+    m.dropdownMenuBackground = m.top.findNode("dropdownMenuBackground")
+    m.dropdownLabelList = m.top.findNode("dropdownLabelList")
+end sub
+
+function openAudioDropdown() as boolean
+    if not isValid(m.audioLabel) then return false
+    
+    pos = m.audioLabel.position()
+    width = m.audioLabel.width - 40
+    
+    m.dropdownMenuBackground.translation = [pos.x, pos.y + m.audioLabel.height]
+    m.dropdownMenuBackground.width = width
+    m.dropdownMenuBackground.height = 160 ' Clipped at bottom for 4th entry
+    
+    m.dropdownPopupAlpha.opacity = 0.95
+    m.dropdownLabelList.visible = true
+    
+    return true
+end function
+
+function closeAudioDropdown()
+    m.dropdownPopupAlpha.opacity = 0
+    m.dropdownLabelList.visible = false
+end function
+
+function updateAudioOptions(options as Array)
+    if not isValid(m.dropdownLabelList) then return
+    
+    m.audioOptionsList = options
+    
+    totalItems = m.audioOptionsList.length
+    
+    numVisibleRows = min(4, totalItems) ' Show max 4 entries, with 4th clipped at bottom
+    
+    startIndex = max(0, totalItems - numVisibleRows)
+    
+    for i = 0 to totalItems - 1 do
+        rowItem = createObject("roSGNode", "Label")
+        
+        item = m.audioOptionsList[i]
+        
+        if item.isActive then
+            rowItem.color = ColorPalette.WHITE
+            rowItem.text = "✓" + item.name
+        else if i <= startIndex + 1 then
+            rowItem.color = "#FFFFFF"
+            rowItem.text = item.name
+        else
+            rowItem.color = "#808080" ' Dimmed gray for unselected entries beyond 2nd
+            rowItem.text = item.name
+        end if
+        
+        rect = m.dropdownLabelList.getBoundingRect(0, startIndex + i)
+        if isValid(rect) then
+            rowItem.translation = [rect.x, rect.y]
+            m.dropdownLabelList.add(rowItem)
+        end if
+    end for
+    
+    ' Set up LabelList scrolling by limiting height to clip 4th entry
+    m.dropdownLabelList.numRows = numVisibleRows
+    
+    return true
+end function
+
+function getAudioOptionsForMovie(movieId as String):Array
+    return [] ' Placeholder - implement with your data source
+end function

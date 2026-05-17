@@ -24,7 +24,7 @@ sub contentChanged()
     m.list.content = content
     totalCount = content.getChildCount()
     visibleRows = totalCount
-    if visibleRows > 8 then visibleRows = 8
+    if visibleRows > 2 then visibleRows = 2
     m.list.numRows = visibleRows
 
     ' Calculate dynamic width from longest text
@@ -51,17 +51,11 @@ sub contentChanged()
     m.border.width = dims.w
     m.border.height = dims.h + 2
     m.list.itemSize = [dims.w, 64]
+    
+    
 
-    ' Jump to selected item
-    idx = 0
-    for i = 0 to totalCount - 1
-        child = content.getChild(i)
-        if isValid(child) and child.selected = true
-            idx = i
-            exit for
-        end if
-    end for
-    m.list.jumpToItem = idx
+    ' Always start focus at the top item as requested by user
+    m.list.jumpToItem = 0
 end sub
 
 function calculateWidth(content as object) as integer
@@ -72,13 +66,13 @@ function calculateWidth(content as object) as integer
         child = content.getChild(i)
         if isValid(child)
             title = child.title
-            if isValid(title) then
+            if isValid(title)
                 l = Len(title)
                 if l > longest then longest = l
             end if
 
             desc = child.description
-            if isValid(desc) then
+            if isValid(desc)
                 l = Len(desc)
                 if l > longest then longest = l
             end if
@@ -105,6 +99,7 @@ sub onItemSelected()
     selected = m.list.itemSelected
     if selected >= 0
         m.top.selectedIndex = selected
+        hide()
     end if
 end sub
 

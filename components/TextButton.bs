@@ -10,7 +10,6 @@ sub init()
     m.buttonBorder = m.top.findNode("buttonBorder")
     m.buttonIcon = m.top.findNode("buttonIcon")
     m.buttonText = m.top.findNode("buttonText")
-    m.buttonTextScrolling = m.top.findNode("buttonTextScrolling")
     m.scrollDelayTimer = m.top.findNode("scrollDelayTimer")
 
     if isValid(m.scrollDelayTimer)
@@ -46,10 +45,8 @@ end sub
 sub onBoldChanged()
     if m.top.bold
         m.buttonText.font = "font:MediumBoldSystemFont"
-        if isValid(m.buttonTextScrolling) then m.buttonTextScrolling.font = "font:MediumBoldSystemFont"
     else
         m.buttonText.font = "font:MediumSystemFont"
-        if isValid(m.buttonTextScrolling) then m.buttonTextScrolling.font = "font:MediumSystemFont"
     end if
     onFontSizeChanged()
 end sub
@@ -107,9 +104,6 @@ end sub
 sub onFontSizeChanged()
     if m.top.fontSize > 0
         m.buttonText.font.size = m.top.fontSize
-        if isValid(m.buttonTextScrolling) and isValid(m.buttonTextScrolling.font)
-            m.buttonTextScrolling.font.size = m.top.fontSize
-        end if
     end if
     setIconSize()
 end sub
@@ -125,26 +119,6 @@ sub onFocusChanged()
     end if
 
     applyVisualState()
-
-    if isValid(m.scrollDelayTimer)
-        if hasButtonFocus()
-            m.scrollDelayTimer.duration = m.top.scrollDelay
-            m.scrollDelayTimer.control = "start"
-        else
-            m.scrollDelayTimer.control = "stop"
-            ' Reset to normal text when focus is lost
-            m.buttonText.visible = true
-            m.buttonTextScrolling.visible = false
-        end if
-    end if
-end sub
-
-sub onScrollTimerFire()
-    if hasButtonFocus() and isValid(m.buttonText) and m.top.text <> ""
-        m.buttonText.visible = false
-        m.buttonTextScrolling.text = m.top.text
-        m.buttonTextScrolling.visible = true
-    end if
 end sub
 
 sub applyVisualState()
@@ -305,12 +279,6 @@ sub setIconSize()
             m.buttonText.width = (iconTextGap > 0) ? iconTextGap : 0
         else
             m.buttonText.width = width - (padding * 2)
-        end if
-
-        if isValid(m.buttonTextScrolling)
-            m.buttonTextScrolling.maxWidth = m.buttonText.width
-            m.buttonTextScrolling.height = m.buttonText.height
-            m.buttonTextScrolling.translation = m.buttonText.translation
         end if
     end if
 end sub

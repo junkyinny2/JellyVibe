@@ -10,8 +10,7 @@
     <Poster id="buttonIcon" loadDisplayMode="limitSize" />
     <Spinner id="buttonSpinner" visible="false" />
     <Rectangle id="buttonTextBackground" color="0x00000000" />
-    <Text id="buttonText" color="#aaaaaa" font="font:SmallestSystemFont" horizAlign="center" vertAlign="top" wrap="true" maxLines="3" lineSpacing="4" />
-    <ScrollingText id="buttonTextScrolling" color="#aaaaaa" font="font:SmallestSystemFont" repeatCount="-1" visible="false" />
+    <Text id="buttonText" color="#aaaaaa" font="font:SmallestSystemFont" horizAlign="center" vertAlign="center" wrap="true" maxLines="3" lineSpacing="4" />
     <Timer id="scrollTimer" repeat="false" />
   </children>
   <interface>

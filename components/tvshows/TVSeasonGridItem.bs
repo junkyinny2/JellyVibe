@@ -50,8 +50,6 @@ sub onWidthChanged()
     m.backdrop.width = m.top.width
     m.itemPoster.width = m.top.width
     m.posterText.width = m.top.width
-    m.title.maxWidth = m.top.width
-    m.itemTextExtra.maxWidth = m.top.width
     m.itemIcon.translation = [m.top.width, 0]
     m.playedIndicator.translation = [m.top.width - m.playedIndicator.width, 0]
 end sub
@@ -137,13 +135,7 @@ function getPosterURL(itemData) as string
 end function
 
 sub focusChanged()
-    if m.top.itemHasFocus = true
-        m.title.repeatCount = -1
-        m.itemTextExtra.repeatCount = -1
-    else
-        m.title.repeatCount = 0
-        m.itemTextExtra.repeatCount = 0
-    end if
+    ' Title scrolling disabled - using Labels instead of ScrollingText
 end sub
 
 sub onURIChange()
