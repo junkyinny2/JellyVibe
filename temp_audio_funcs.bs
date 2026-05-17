@@ -1,0 +1,76 @@
+
+function openAudioDropdown() as boolean
+    var pos = m.audioLabel.position()
+    var width = m.audioLabel.width - 40
+
+    var background = m.top.findNode("dropdownMenuBackground")
+    if not isValid(background) then return false
+
+    background.visible = true
+    background.translation = [pos.x, pos.y + m.audioLabel.height]
+    background.width = width
+    background.height = 160
+    background.color = "#020B2A"
+    background.opacity = 0.95
+
+    var listNode = createObject("roSGNode", "Text")
+    listNode.visible = true
+    listNode.width = width - 80
+    listNode.height = 160
+    listNode.translation = [20, 0]
+    listNode.clippingRect = [-20, -5, width + 100, 165]
+
+    var audioOptions = getAudioOptionsForMovie(chainLookupReturn(m.top, "parentItem.Id", ""))
+    if isValid(audioOptions) and audioOptions.count > 0 then
+        for i = 0 to min(audioOptions.count(), 4) do
+            var item = audioOptions[i]
+            var labelNode = createObject("roSGNode", "Label")
+            rect = getDropdownRect(i)
+            if not isValid(rect) then continue
+
+            labelNode.width = width - 80
+            labelNode.height = 40
+            labelNode.translation = [20, rect.y]
+            labelNode.font.size = 36
+            labelNode.color = item.isActive ? ColorPalette.WHITE : "#808080"
+
+            if item.isActive then
+                labelNode.text = "✓ " + item.name
+            else
+                labelNode.text = item.name
+            end if
+            listNode.add(labelNode)
+        end for
+    end if
+    return true
+end function
+
+function getAudioOptionsForMovie(itemId as String):Array
+    var options = []
+    var itemData = chainLookupReturn(m.top, "parentItem")
+    if not isValid(itemData) then return options
+    if hasattr(itemData, "audioTracks") and hasField(itemData, "audioTracks") then
+        local tracks = itemData.audioTracks
+        for i = 0 to min(tracks.count(), 3) do
+            var track = tracks[i] or {name:"Track(" + (i+1) + ")"}
+            options.push({ name: track.name or ("Audio Track " + (i+1).toStr()), isActive:(i==0)})
+        end for
+    else
+        options.push({name:"- Select Audio -",isActive:false})
+    end if
+    return options
+end function
+
+function getDropdownRect(index as integer) as object
+    rowHeight = 40
+    topOffset = (index < 3) ? -15 : rowHeight - 15
+    return { x:20, y:20+index*rowHeight, width:140, height:rowHeight }
+end function
+
+function closeAudioDropdown()
+    var background = m.top.findNode("dropdownMenuBackground")
+    if not isValid(background) then return
+    background.visible = false
+    background.opacity = 0
+end function
+
