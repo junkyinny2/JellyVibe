@@ -1,3 +1,5 @@
+import "pkg:/source/enums/KeyCode.bs"
+
 sub init()
     m.wrapper = m.top.findNode("wrapper")
     m.list = m.top.findNode("list")
@@ -21,11 +23,9 @@ sub contentChanged()
     content = m.top.content
     if not isValid(content) then return
 
-    m.list.content = content
     totalCount = content.getChildCount()
     visibleRows = totalCount
-    if visibleRows > 2 then visibleRows = 2
-    m.list.numRows = visibleRows
+    if visibleRows > 4 then visibleRows = 4
 
     ' Calculate dynamic width from longest text
     w = calculateWidth(content)
@@ -38,21 +38,27 @@ sub contentChanged()
     end if
 
     ' Always position below the button
-    y = m.top.anchorY + 52
+    y = m.top.anchorY + 50
     m.animStartY = -20
     m.animEndY = 0
 
     m.top.translation = [x, y]
     m.wrapper.translation = [0, 0]
 
-    ' Size the dropdown
+    ' Size the dropdown background and border
     m.bg.width = dims.w
-    m.bg.height = dims.h + 2
+    m.bg.height = dims.h + 12
     m.border.width = dims.w
-    m.border.height = dims.h + 2
-    m.list.itemSize = [dims.w, 64]
+    m.border.height = dims.h + 12
+    m.wrapper.clippingRect = [0, 0, dims.w, dims.h + 12]
+
+    ' Configure grid layout BEFORE setting content (Roku SceneGraph requirement)
+    m.list.numRows = visibleRows
+    m.list.itemSize = [dims.w, 52]
+    m.list.height = visibleRows * 52
     
-    
+    ' Set content to trigger layout build
+    m.list.content = content
 
     ' Always start focus at the top item as requested by user
     m.list.jumpToItem = 0
@@ -79,8 +85,8 @@ function calculateWidth(content as object) as integer
         end if
     end for
 
-    ' ~11px per char for SmallestSystemFont + 40px for checkmark/padding
-    w = longest * 11 + 40
+    ' ~8px per char for SmallestSystemFont + 64px for checkmark/padding
+    w = longest * 8 + 64
     if w < m.top.itemWidth then w = m.top.itemWidth
     if w > 1000 then w = 1000
 
@@ -91,7 +97,7 @@ function getDropdownDimensions(width as integer, visibleRows as integer) as obje
     content = m.top.content
     if not isValid(content) then return { w: width, h: 100 }
 
-    h = visibleRows * 64
+    h = visibleRows * 52
     return { w: width, h: h }
 end function
 
@@ -107,6 +113,7 @@ sub show()
     content = m.top.content
     if not isValid(content) or content.getChildCount() = 0 then return
 
+    m.top.selectedIndex = -1
     m.top.visible = true
     m.wrapper.opacity = 0
     m.wrapper.translation = [0, m.animStartY]
@@ -121,5 +128,14 @@ end sub
 sub hide()
     m.top.visible = false
     m.list.setFocus(false)
-    m.top.selectedIndex = -1
 end sub
+
+function onKeyEvent(key as string, press as boolean) as boolean
+    if not press then return false
+
+    if key = KeyCode.BACK
+        return false
+    end if
+
+    return true
+end function

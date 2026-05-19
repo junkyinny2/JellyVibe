@@ -55,6 +55,12 @@ sub findNodes()
     m.focusAnimation = m.top.findNode("focusAnimation")
     m.translationInterpolator = m.top.findNode("translationInterpolator")
     m.shadowTranslationInterpolator = m.top.findNode("shadowTranslationInterpolator")
+
+    m.tileCollageGroup = m.top.findNode("tileCollageGroup")
+    m.tileImg1 = m.top.findNode("tileImg1")
+    m.tileImg2 = m.top.findNode("tileImg2")
+    m.tileImg3 = m.top.findNode("tileImg3")
+    m.tileImg4 = m.top.findNode("tileImg4")
     
 end sub
 
@@ -91,6 +97,12 @@ sub itemContentChanged()
     itemData = m.top.itemContent
 
     if not isValid(itemData) then return
+
+    ' Reset collage display in case this item is being recycled
+    if isValid(m.tileCollageGroup)
+        m.tileCollageGroup.visible = false
+    end if
+
     localGlobal = m.global
 
     if isValid(m.playedIndicator)
@@ -225,19 +237,55 @@ sub itemContentChanged()
 end sub
 
 sub displayCollectionInfo(itemData as object)
-    m.itemText.text = "" ' keep row label empty for libraries
-    m.overlaidTitle.text = itemData.name
-    m.overlaidTitle.visible = true
-    if isValidAndNotEmpty(itemData.iconUrl)
-        m.itemIcon.uri = itemData.iconUrl
+    m.itemText.text = itemData.name
+    m.itemText.width = itemData.imageWidth
+    m.itemText.translation = [0, 273]
+    m.itemText.font = "font:SmallBoldSystemFont"
+    m.itemText.horizAlign = "center"
+
+    ' Try collage display when tile images are available
+    tileURLs = getTileImageURLs(itemData)
+    if isValidAndNotEmpty(tileURLs)
+        m.tileImg1.uri = tileURLs[0]
+        m.tileImg2.uri = tileURLs[1]
+        m.tileImg3.uri = tileURLs[2]
+        m.tileImg4.uri = tileURLs[3]
+
+        m.itemPoster.visible = false
+        m.backdrop.visible = false
+        m.itemIcon.visible = false
+        m.overlaidTitle.visible = false
+        m.tileCollageGroup.visible = true
+        return
     end if
 
-    if isValidAndNotEmpty(itemData.widePosterURL)
-        m.itemPoster.uri = itemData.widePosterURL
-    else
-        m.itemPoster.uri = itemData.posterURL
-    end if
+    ' Fallback: standard library tile with clean background and centered overlaid title (like "Playlists")
+    m.tileCollageGroup.visible = false
+    m.itemPoster.visible = false
+    m.backdrop.visible = true
+    m.backdrop.blendColor = "#1e1e24" ' Premium dark grey background box
+    m.backdrop.width = itemData.imageWidth
+    m.backdrop.height = 261
+    m.itemIcon.visible = false
+
+    m.overlaidTitle.text = itemData.name
+    m.overlaidTitle.width = itemData.imageWidth
+    m.overlaidTitle.height = 261
+    m.overlaidTitle.horizAlign = "center"
+    m.overlaidTitle.vertAlign = "center"
+    m.overlaidTitle.font = "font:MediumBoldSystemFont"
+    m.overlaidTitle.visible = true
 end sub
+
+function getTileImageURLs(itemData as object) as object
+    urls = []
+    if isValidAndNotEmpty(itemData.tileImageURL1) then urls.push(itemData.tileImageURL1)
+    if isValidAndNotEmpty(itemData.tileImageURL2) then urls.push(itemData.tileImageURL2)
+    if isValidAndNotEmpty(itemData.tileImageURL3) then urls.push(itemData.tileImageURL3)
+    if isValidAndNotEmpty(itemData.tileImageURL4) then urls.push(itemData.tileImageURL4)
+    if urls.Count() = 4 then return urls
+    return invalid
+end function
 
 sub displayPhotoAlbumInfo(itemData as object)
     m.itemText.text = itemData.name

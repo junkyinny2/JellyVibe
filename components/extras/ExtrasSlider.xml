@@ -29,5 +29,6 @@
   </children>
   <interface>
     <field id="hasItems" type="boolean" alias="extrasGrid.hasItems" />
+    <field id="selectedItem" type="node" alias="extrasGrid.selectedItem" />
   </interface>
 </component>

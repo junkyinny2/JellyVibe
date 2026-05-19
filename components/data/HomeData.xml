@@ -16,6 +16,10 @@
     <field id="isWatched" type="bool" value="false" />
     <field id="selectedAudioStreamIndex" type="integer" value="0" />
     <field id="startingPoint" type="longinteger" value="0" />
+    <field id="tileImageURL1" type="string" />
+    <field id="tileImageURL2" type="string" />
+    <field id="tileImageURL3" type="string" />
+    <field id="tileImageURL4" type="string" />
   </interface>
 
 </component>

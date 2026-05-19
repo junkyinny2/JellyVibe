@@ -7,26 +7,28 @@
     <field id="anchorX" type="integer" value="0" />
     <field id="anchorY" type="integer" value="780" />
     <field id="itemWidth" type="integer" value="320" />
+    <field id="maxRows" type="integer" value="4" />
     <function name="show" />
     <function name="hide" />
   </interface>
 
   <children>
     <Group id="wrapper">
-      <Rectangle id="bg" color="#0a0518" width="320" height="100" />
-      <Rectangle id="border" color="#0a0518" width="320" height="100" translation="[0, 0]" visible="false" />
+      <Poster id="bg" uri="pkg:/images/9patch/filled-rounded.9.png" blendColor="#020B2A" opacity="0.85" width="320" height="100" />
+      <Poster id="border" uri="pkg:/images/9patch/border-6px.9.png" blendColor="#6F7FB7" opacity="0.25" width="320" height="100" translation="[0, 0]" visible="true" />
 
       <MarkupGrid
         id="list"
         itemComponentName="StreamDropdownItem"
         numColumns="1"
-        numRows="1"
+        numRows="4"
         itemSpacing="[0, 0]"
-        itemSize="[320, 64]"
-        translation="[0, 1]"
+        itemSize="[320, 52]"
+        translation="[0, 6]"
         drawFocusFeedback="false"
         vertFocusAnimationStyle="floatingFocus"
-        focusable="true" />
+        focusable="true"
+        wrap="true" />
     </Group>
 
     <Animation id="slideAnim" duration="0.2" repeat="false" easeFunction="easeout">

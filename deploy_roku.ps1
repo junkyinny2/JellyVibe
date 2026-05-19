@@ -1,20 +1,18 @@
 # Roku Deployment PowerShell Script
-# This script builds the Jellyfin Roku app and deploys to your device.
-# Usage: .\deploy_roku.ps1 [-Target "living"|"bedroom"]
-
-param(
-    [string]$Target = ""
-)
+# This script builds the JellyVibe Roku app and deploys to your device.
+#
+# !!! WARNING: The Living Room Roku IP is 192.168.1.196. DO NOT CHANGE IT !!!
 
 $RokuPass = "whit"
-$ConfigFile = "bsconfig.deploy.json"
-
 $RokuUser = "rokudev"
+$ConfigFile = Join-Path $PSScriptRoot "bsconfig.deploy.json"
+$Config = $null
+
 if (Test-Path $ConfigFile) {
     try {
-        $config = Get-Content $ConfigFile -Raw | ConvertFrom-Json
-        if ($config.password) { $RokuPass = $config.password }
-        if ($config.username) { $RokuUser = $config.username }
+        $Config = Get-Content $ConfigFile -Raw | ConvertFrom-Json
+        if ($Config.password) { $RokuPass = $Config.password }
+        if ($Config.username) { $RokuUser = $Config.username }
         Write-Host "[INFO] Loaded deployment config from $ConfigFile" -ForegroundColor Gray
     } catch {
         Write-Host "[WARNING] Could not parse $ConfigFile. Using fallbacks." -ForegroundColor Yellow
@@ -24,39 +22,27 @@ if (Test-Path $ConfigFile) {
 Write-Host ""
 Write-Host "=== JellyVibe Deployment ===" -ForegroundColor Yellow
 
-# Select Roku target
-if ($Target -eq "") {
-    Write-Host "Select Roku target:"
-    Write-Host "  1) 192.168.1.196 (Living Room)"
-    Write-Host "  2) 192.168.1.181 (Bedroom)"
-    Write-Host ""
-    $choice = Read-Host "Enter 1 or 2"
-    switch ($choice) {
-        "1" { $RokuIP = "192.168.1.196" }
-        "2" { $RokuIP = "192.168.1.181" }
-        default { $RokuIP = "192.168.1.196" }
-    }
-} else {
-    switch -Wildcard ($Target.ToLower()) {
-        "bedroom" { $RokuIP = "192.168.1.181" }
-        default   { $RokuIP = "192.168.1.196" }
-    }
-}
-Write-Host "Target: $RokuIP" -ForegroundColor Gray
-Write-Host "Config: $ConfigFile" -ForegroundColor Gray
+# Ask for Roku IP (Enter defaults to 192.168.1.196)
+# !!! DO NOT CHANGE: Living Room Roku = 192.168.1.196 !!!
+$defaultIP = "192.168.1.196"
+$RokuIP = Read-Host "Enter Roku IP (default: $defaultIP)"
+if ($RokuIP -eq "") { $RokuIP = $defaultIP }
 
 Write-Host ""
 Write-Host "[1/3] Cleaning old build artifacts..." -ForegroundColor Cyan
 npx rimraf build/ out/
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "[WARNING] Clean step had issues, continuing..." -ForegroundColor Yellow
+}
 
 Write-Host ""
 Write-Host "[2/3] Building package..." -ForegroundColor Cyan
-$buildResult = npx bsc --project $ConfigFile 2>&1
+$buildOutput = npx bsc --project $ConfigFile 2>&1
 $buildExit = $LASTEXITCODE
 
 if ($buildExit -ne 0) {
     Write-Host "[ERROR] Build failed with exit code $buildExit" -ForegroundColor Red
-    Write-Host $buildResult
+    Write-Host $buildOutput
     pause
     exit 1
 }
@@ -74,20 +60,12 @@ Write-Host "Build complete! Package size: $([math]::Round($zipSize, 1)) KB" -For
 Write-Host ""
 Write-Host "[3/3] Sideloading to Roku at $RokuIP..." -ForegroundColor Cyan
 
-if (-not (Test-Connection -ComputerName $RokuIP -Count 1 -Quiet)) {
+if (-not (Test-Connection -ComputerName $RokuIP -Count 1 -Quiet -ErrorAction SilentlyContinue)) {
     Write-Host "[WARNING] Roku at $RokuIP is not responding to ping. Deployment may fail." -ForegroundColor Yellow
 }
 
-$curl = "curl.exe"
-if (-not (Get-Command $curl -ErrorAction SilentlyContinue)) {
-    Write-Host "[ERROR] curl.exe not found on PATH." -ForegroundColor Red
-    pause
-    exit 1
-}
-
-# Use digest auth to sideload the zip
 $uploadUrl = "http://$RokuIP/plugin_install"
-$result = & $curl -sS --user "$RokuUser`:$RokuPass" --digest -F "archive=@$zipPath" -F "mysubmit=Replace" $uploadUrl 2>&1
+$result = & "curl.exe" -sS --user "$RokuUser`:$RokuPass" --digest -F "archive=@$zipPath" -F "mysubmit=Replace" $uploadUrl 2>&1
 $uploadExit = $LASTEXITCODE
 
 if ($uploadExit -ne 0) {
@@ -99,4 +77,5 @@ if ($uploadExit -ne 0) {
 
 Write-Host ""
 Write-Host "Deployment Complete! App should be launching on your Roku." -ForegroundColor Green
-pause
+Write-Host "Starting Roku Dev Mode Monitor..." -ForegroundColor Yellow
+& "$PSScriptRoot\rokudebug.ps1" $RokuIP

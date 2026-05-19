@@ -179,11 +179,6 @@
     <field id="alphaActive" type="boolean" value="false" />
     <field id="showItemTitles" type="string" value="" />
     
-    <!-- Audio Dropdown Interface -->
-    <function name="openAudioDropdown" />
-    <function name="closeAudioDropdown" />
-    <function name="updateAudioOptions" />
-    <field id="audioOptionsList" type="array" />
   </interface>
 
 </component>

@@ -1,33 +1,26 @@
 # ================================
 # Roku Dev Mode Monitor
-# User: rokudev
-# Pass: whit
 # Logs button presses + video traces
-# Usage: .\rokudebug.ps1 [-Target "living"|"bedroom"]
+# Usage: .\rokudebug.ps1 [RokuIP]
+#   If IP is provided, connects directly.
+#   If omitted, prompts with default 192.168.1.196.
+#
+# !!! WARNING: The Living Room Roku IP is 192.168.1.196. DO NOT CHANGE IT !!!
 # ================================
 
 param(
-    [string]$Target = ""
+    [string]$RokuIP = ""
 )
 
 $port = 8085
 
-if ($Target -eq "") {
-    Write-Host "Select Roku target:"
-    Write-Host "  1) 192.168.1.196 (Living Room)"
-    Write-Host "  2) 192.168.1.181 (Bedroom)"
-    Write-Host ""
-    $choice = Read-Host "Enter 1 or 2"
-    switch ($choice) {
-        "1" { $ip = "192.168.1.196" }
-        "2" { $ip = "192.168.1.181" }
-        default { $ip = "192.168.1.196" }
-    }
+if ($RokuIP -eq "") {
+    # !!! DO NOT CHANGE: Living Room Roku = 192.168.1.196 !!!
+    $defaultIP = "192.168.1.196"
+    $ip = Read-Host "Enter Roku IP (default: $defaultIP)"
+    if ($ip -eq "") { $ip = $defaultIP }
 } else {
-    switch -Wildcard ($Target.ToLower()) {
-        "bedroom" { $ip = "192.168.1.181" }
-        default   { $ip = "192.168.1.196" }
-    }
+    $ip = $RokuIP
 }
 
 $target = "$ip`:$port"

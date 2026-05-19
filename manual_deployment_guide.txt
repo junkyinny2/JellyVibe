@@ -40,5 +40,5 @@ To see logs while the app is running:
 
 ---
 Credentials used in this project:
-- IP: 192.168.1.196
+- IP: 192.168.1.196  <-- !!! LIVING ROOM ROKU - DO NOT CHANGE !!!
 - Pass: whit

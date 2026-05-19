@@ -46,17 +46,17 @@ sub updateColors()
     accentColor = chainLookupReturn(m.global.session, "user.settings.colorCursor", "#4520a0")
 
     if isFocused
-        m.bg.color = accentColor
+        m.bg.blendColor = accentColor
         m.title.color = "#ffffff"
         m.subtitle.color = "#d0d0d0"
         m.check.blendColor = "#ffffff"
     else if isSelected
-        m.bg.color = accentColor
+        m.bg.blendColor = accentColor
         m.title.color = "#ffffff"
         m.subtitle.color = "#d0d0d0"
         m.check.blendColor = "#ffffff"
     else
-        m.bg.color = "#0a0518"
+        m.bg.blendColor = "#0a0518"
         m.title.color = "#e8e8ee"
         m.subtitle.color = "#999999"
         m.check.blendColor = "#ffffff"

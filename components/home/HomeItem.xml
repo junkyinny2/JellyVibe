@@ -19,6 +19,13 @@
           <Rectangle id="progress" width="0" height="8" />
         </Rectangle>
         <Label id="overlaidTitle" width="464" height="261" horizAlign="center" vertAlign="center" wrap="true" font="font:MediumBoldSystemFont" color="#FFFFFF" opacity="1" visible="false" />
+
+        <Group id="tileCollageGroup" visible="false">
+          <Poster id="tileImg1" width="116" height="261" translation="[0, 0]" loadDisplayMode="scaleToZoom" />
+          <Poster id="tileImg2" width="116" height="261" translation="[116, 0]" loadDisplayMode="scaleToZoom" />
+          <Poster id="tileImg3" width="116" height="261" translation="[232, 0]" loadDisplayMode="scaleToZoom" />
+          <Poster id="tileImg4" width="116" height="261" translation="[348, 0]" loadDisplayMode="scaleToZoom" />
+        </Group>
       </Group>
 
       <Label id="itemText" horizAlign="center" vertAlign="center" font="font:SmallBoldSystemFont" height="64" translation="[8,267]" />

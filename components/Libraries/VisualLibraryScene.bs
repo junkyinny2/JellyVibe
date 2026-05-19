@@ -128,7 +128,7 @@ sub init()
     m.overhang.isVisible = false
 
     m.swapAnimation.observeField("state", "swapDone")
-    m.options.observeField("visible", "onOptionsVisibleChange")
+    if isValid(m.options) then m.options.observeField("visible", "onOptionsVisibleChange")
 
     m.loadedRows = 0
     m.loadedItems = 0
@@ -1408,7 +1408,7 @@ sub setSelectedOptions(options)
     for each o in options.filter
         if o.Name = m.filter
             o.Selected = true
-            m.options.filter = o.Name
+            if isValid(m.options) then m.options.filter = o.Name
         end if
 
         ' Select selected filter options
@@ -1436,7 +1436,7 @@ sub setSelectedOptions(options)
         end if
     end for
 
-    m.options.options = options
+    if isValid(m.options) then m.options.options = options
     if isValid(m.sortOrderButton)
         m.sortOrderButton.iconUri = m.sortAscending ? "pkg:/images/icons/up_white.png" : "pkg:/images/icons/down_white.png"
     end if
@@ -1470,7 +1470,7 @@ sub FilterDataLoaded(msg)
     end if
 
     setSelectedOptions(options)
-    m.options.options = options
+    if isValid(m.options) then m.options.options = options
     buildTopTabs(options.views)
 end sub
 
@@ -1638,7 +1638,7 @@ sub ItemDataLoaded(msg)
     hideLoadingStatusText()
     stopLoadingSpinner()
     ' Return focus to options menu if it was opened while library was loading
-    if m.options.visible
+    if isValid(m.options) and m.options.visible
         m.options.setFocus(true)
         group = m.global.sceneManager.callFunc("getActiveScene")
         group.lastFocus = m.options
@@ -2600,7 +2600,7 @@ end sub
 '
 'Check if options updated and any reloading required
 sub onOptionsVisibleChange()
-    if m.options.visible then return
+    if not isValid(m.options) or m.options.visible then return
 
     reload = false
 

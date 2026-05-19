@@ -460,29 +460,15 @@ end sub
 sub updateButtonScrollShift()
     if not isValid(m.buttonGrp) then return
 
-    index = ensureValidSelectedButtonIndex()
-    if index < 0 then index = 0
-
-    max_shift = 0
-    totalItems = m.buttonCount
-    ' With 940 clippingRect and 148 spacing, 6 buttons fit fully. The 7th peeks.
-    if totalItems > 6
-        max_shift = totalItems - 6
-    end if
-
-    shift = index - 5
-    if shift < 0 then shift = 0
-    if shift > max_shift then shift = max_shift
-
-    itemWidth = 148 ' 140 width + 8 spacing
-    m.buttonGrp.translation = [-shift * itemWidth, 0]
+    ' All buttons fit within the widened clippingRect (1720px), no scrolling needed
+    m.buttonGrp.translation = [0, 0]
 
     if isValid(m.leftButtonArrow)
-        m.leftButtonArrow.visible = shift > 0
+        m.leftButtonArrow.visible = false
     end if
 
     if isValid(m.rightButtonArrow)
-        m.rightButtonArrow.visible = shift < max_shift and max_shift > 0
+        m.rightButtonArrow.visible = false
     end if
 end sub
 
@@ -520,7 +506,7 @@ sub openSelectorOptionsByIndex(selectorIndex as integer)
 
     ' If clicking same dropdown, hide it (toggle behavior)
     if m.activeSelectorIndex = selectorIndex
-        closeAllDropdowns()
+        closeAllDropdownsAndReset()
         traceStep("MOVIE_TRACE", "MovieDetails.openSelectorOptionsByIndex toggled off")
         return
     end if
@@ -554,6 +540,10 @@ sub closeAllDropdowns()
         m.subtitleDropdown.callFunc("hide")
         m.subtitleDropdown.visible = false
     end if
+end sub
+
+sub closeAllDropdownsAndReset()
+    closeAllDropdowns()
     m.activeSelectorIndex = -1
 end sub
 
@@ -843,7 +833,7 @@ sub setBackdropImage(itemData as object)
     movieBackdrop.translation = "[0,0]"
     movieBackdrop.width = "1920"
     movieBackdrop.height = "1080"
-    movieBackdrop.opacity = .3
+    movieBackdrop.opacity = .8
     movieBackdrop.uri = ImageURL(m.top.id, imageVersion, {
         "maxWidth": 1920,
         "Tag": imageTag
@@ -915,8 +905,8 @@ sub addTextMovieTitle()
     if not isValid(m.top.findNode("title"))
         title = createObject("roSGNode", "ScrollingText")
         title.id = "title"
-        title.font = "font:LargeBoldSystemFont"
-        title.width = 1100
+        title.font = "font:MediumBoldSystemFont"
+        title.width = 550
         title.height = 70
         m.container.insertChild(title, 0)
     end if
@@ -1349,7 +1339,7 @@ sub SetUpVideoOptions(streams)
         child = versionContent.CreateChild("ContentNode")
         child.title = v.Title
         child.addField("description", "string", true)
-        child.description = v.Description
+        child.description = truncateVersionText(v.Description)
         child.addField("selected", "boolean", true)
         child.selected = v.Selected
         child.addField("streamid", "string", true)
@@ -1367,6 +1357,13 @@ sub SetUpVideoOptions(streams)
         end for
     end if
 end sub
+
+function truncateVersionText(text as string) as string
+    if text.Len() > 25
+        return text.Left(22) + "..."
+    end if
+    return text
+end function
 
 sub SetUpAudioOptions(streams)
     if not isValid(streams) then return
@@ -1922,13 +1919,14 @@ function onKeyEvent(key as string, press as boolean) as boolean
 
     if dropdownOpen
         if key = KeyCode.BACK
-            closeAllDropdowns()
+            closeAllDropdownsAndReset()
             m.focusRow = 1
             updateFocus()
             return true
         end if
-        ' Let the dropdown handle its own navigation
-        return false
+        ' Consume all keys so the same OK press that selected an item in
+        ' the dropdown doesn't also trigger onKeyEvent in this scene.
+        return true
     end if
 
     if key = KeyCode.UP

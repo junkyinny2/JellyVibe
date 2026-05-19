@@ -2,6 +2,7 @@ import "pkg:/source/api/baserequest.bs"
 import "pkg:/source/api/Image.bs"
 import "pkg:/source/api/Items.bs"
 import "pkg:/source/api/sdk.bs"
+import "pkg:/source/enums/ImageType.bs"
 import "pkg:/source/enums/ItemType.bs"
 import "pkg:/source/enums/String.bs"
 import "pkg:/source/utils/config.bs"
@@ -37,8 +38,9 @@ function loadLibraries() as object
         hasImages = isValidAndNotEmpty(imageTags) and type(imageTags) = "roAssociativeArray" and imageTags.count() > 0
         if not hasImages
             collectionType = LCase(item.LookupCI("CollectionType") ?? "")
-            ' Recognized types that we have icons for in HomeData.bs
-            if not inArray(["livetv", "folders", "nextup", "playlists", "movies", "tvshows", "music", "boxsets", "boxset", "collections"], collectionType)
+            itemType = LCase(item.LookupCI("Type") ?? "")
+            ' Recognized types, standard collections, or collectionfolder libraries
+            if not inArray(["livetv", "folders", "nextup", "playlists", "movies", "tvshows", "music", "boxsets", "boxset", "collections"], collectionType) and itemType <> "collectionfolder"
                 continue for
             end if
         end if
@@ -58,6 +60,76 @@ function loadLibraries() as object
             BackdropImageTags: item.LookupCI("BackdropImageTags")
         }
         tmp.collectionType = item.LookupCI("CollectionType")
+
+        ' Fetch up to 4 random item poster images for the tile collage display
+        tileURLs = []
+
+        ' Try fetching random items from the library first
+        randomParams = {
+            userId: m.global.session.user.id,
+            limit: 16,
+            parentId: itemId,
+            recursive: true,
+            sortBy: "Random",
+            enableImageTypes: ImageType.PRIMARY,
+            imageTypeLimit: 1,
+            enableTotalRecordCount: false
+        }
+        tileData = api.items.Get(randomParams)
+        if isValidAndNotEmpty(tileData) and isChainValid(tileData, "Items")
+            for each tileItem in tileData.Items
+                if tileURLs.Count() >= 4 then exit for
+                imageTags = tileItem.LookupCI("ImageTags")
+                if isValidAndNotEmpty(imageTags) and isChainValid(tileItem, "ImageTags.Primary")
+                    imgParams = { maxHeight: 261, maxWidth: 116, tag: imageTags.Primary }
+                    tileUrl = ImageURL(tileItem.LookupCI("Id"), "Primary", imgParams)
+                    tileURLs.push(tileUrl)
+                end if
+            end for
+        end if
+
+        ' Fallback to GetLatest if random search didn't yield 4 images
+        if tileURLs.Count() < 4
+            latestParams = {
+                userId: m.global.session.user.id,
+                limit: 12,
+                parentId: itemId,
+                enableImageTypes: ImageType.PRIMARY,
+                imageTypeLimit: 1,
+                enableTotalRecordCount: false
+            }
+            latestData = api.items.GetLatest(latestParams)
+            if isValidAndNotEmpty(latestData)
+                for each tileItem in latestData
+                    if tileURLs.Count() >= 4 then exit for
+                    imageTags = tileItem.LookupCI("ImageTags")
+                    if isValidAndNotEmpty(imageTags) and isChainValid(tileItem, "ImageTags.Primary")
+                        imgParams = { maxHeight: 261, maxWidth: 116, tag: imageTags.Primary }
+                        tileUrl = ImageURL(tileItem.LookupCI("Id"), "Primary", imgParams)
+                        if not inArray(tileURLs, tileUrl)
+                            tileURLs.push(tileUrl)
+                        end if
+                    end if
+                end for
+            end if
+        end if
+
+        ' Pad/Duplicate images so the collage is always full of 4 items
+        if tileURLs.Count() > 0 and tileURLs.Count() < 4
+            origCount = tileURLs.Count()
+            for idx = tileURLs.Count() to 3
+                tileURLs.push(tileURLs[idx mod origCount])
+            end for
+        end if
+
+        ' Assign urls to the data fields
+        if tileURLs.Count() = 4
+            tmp.tileImageURL1 = tileURLs[0]
+            tmp.tileImageURL2 = tileURLs[1]
+            tmp.tileImageURL3 = tileURLs[2]
+            tmp.tileImageURL4 = tileURLs[3]
+        end if
+
         results.push(tmp)
     end for
 
